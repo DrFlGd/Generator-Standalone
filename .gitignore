@@ -141,3 +141,9 @@ result.json
 .render/
 .render-carabiner/
 packages/fonts/scripts/.icons-metadata.json
+
+# Private desktop wrapper artifacts
+/desktop-dist/
+/src-tauri/target/
+/src-tauri/gen/
+/src-tauri/icons/

@@ -1,0 +1,13 @@
+{
+  "identifier": "main-capability",
+  "description": "Allow only native save dialogs, writes to chosen files, and external links in the system browser.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:allow-save",
+    "fs:allow-write-file",
+    "opener:default"
+  ]
+}
