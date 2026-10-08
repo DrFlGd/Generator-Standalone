@@ -1,0 +1,59 @@
+name: Windows desktop build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/build-desktop.mjs'
+      - 'scripts/desktop-bridge.js'
+      - 'src-tauri/**'
+      - '.github/workflows/windows-desktop.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'generators.json'
+      - 'apps/**'
+      - 'packages/**'
+  pull_request:
+    paths:
+      - 'scripts/build-desktop.mjs'
+      - 'scripts/desktop-bridge.js'
+      - 'src-tauri/**'
+      - '.github/workflows/windows-desktop.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'generators.json'
+      - 'apps/**'
+      - 'packages/**'
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install monorepo dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build Windows desktop installer
+        run: pnpm desktop:build
+      - name: Upload Windows executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: vostoklabs-standalone-windows-x64
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/vostoklabs-standalone.exe
+            src-tauri/target/release/bundle/nsis/*.exe
