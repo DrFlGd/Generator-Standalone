@@ -15,6 +15,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Wait for tested Windows desktop build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run watch 37851478909 --repo "$GITHUB_REPOSITORY" --exit-status
+
       - name: Verify private repository and successful desktop build
         shell: bash
         env:
