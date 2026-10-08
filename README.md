@@ -25,3 +25,9 @@ This creates an NSIS setup executable in `src-tauri/target/release/bundle/nsis/`
 The desktop-specific bridge opens external links in the system browser, routes hub pages to packaged HTML, and intercepts HTML download links to show a Windows Save As dialog. File uploads and the regular browser builds remain unchanged. Windows SmartScreen may warn until executables are signed.
 
 **License:** The upstream Vostok Labs files retain their existing terms, including CC BY-NC-ND 4.0. Keep this modified desktop edition private for personal, noncommercial use unless separate redistribution permission is obtained.
+
+### Windows v0.2.0: simplified Generators launcher
+
+The **Windows desktop package** now launches directly into the Generators catalogue. The static Vostok Labs home, Licences, FAQ, Coming Soon cards, rail MakerWorld/Coffee shortcuts, and site footer (including redundant links) are removed from packaged desktop HTML. The corresponding unneeded page HTML files are excluded from the Windows bundle. Generator cards and their working local apps remain available, while the public website and source assets are preserved. Upstream licence and attribution notices remain in the repository.
+
+The packaged catalogue root is / ` (rather than the old /make/` page). The older desktop builds remain available under their original release tags.

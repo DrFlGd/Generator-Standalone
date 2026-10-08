@@ -1,10 +1,9 @@
-name: Publish private Windows v0.1.0 release
+name: Publish private Windows v0.2.0 release
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - '.github/workflows/publish-windows-release.yml'
+  workflow_run:
+    workflows: ['Windows desktop build']
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -13,35 +12,48 @@ permissions:
 
 jobs:
   publish:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'master')
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for tested Windows desktop build
+      - name: Verify private repository and validated Windows build
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh run watch 37851626108 --repo "$GITHUB_REPOSITORY" --exit-status
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          test "$(gh api "repos/$repo" --jq '.private')" = true
+          test "$(gh api "repos/$repo" --jq '.fork')" = false
 
-      - name: Verify private repository and successful desktop build
+          run_id="$TRIGGER_RUN"
+          if [ -z "$run_id" ]; then
+            run_id="$(gh run list --repo "$repo" --workflow "Windows desktop build" --branch master --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          fi
+          test -n "$run_id"
+          test "$(gh api "repos/$repo/actions/runs/$run_id" --jq '.conclusion')" = success
+          test "$(gh api "repos/$repo/actions/runs/$run_id" --jq '.event')" = push
+          test "$(gh api "repos/$repo/actions/runs/$run_id" --jq '.head_branch')" = master
+          build_sha="$(gh api "repos/$repo/actions/runs/$run_id" --jq '.head_sha')"
+          test -n "$build_sha"
+          version="$(gh api "repos/$repo/contents/src-tauri/tauri.conf.json?ref=$build_sha" --jq '.content' | base64 -d | jq -r '.version')"
+          test "$version" = 0.2.0
+          echo "WINDOWS_RUN_ID=$run_id" >> "$GITHUB_ENV"
+          echo "WINDOWS_COMMIT=$build_sha" >> "$GITHUB_ENV"
+
+      - name: Download verified Windows installer and executable
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
-          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.fork')" = false
-          run_id=37851626108
-          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.conclusion')" = success
-          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.head_sha')" = 028772f51d3990fd276b6367b6d1c530615a67e5
+          gh run download "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" --name vostoklabs-standalone-windows-x64 --dir release-assets
 
-      - name: Download validated Windows installer and executable
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh run download 37851626108 --repo "$GITHUB_REPOSITORY" --name vostoklabs-standalone-windows-x64 --dir release-assets
-
-      - name: Publish version 0.1.0 privately
+      - name: Publish private Windows release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -51,33 +63,26 @@ jobs:
           executable="$(find release-assets -type f -name 'vostoklabs-standalone.exe' -print -quit)"
           test -n "$installer" && test -s "$installer"
           test -n "$executable" && test -s "$executable"
-
-          if gh release view v0.1.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "v0.1.0 already exists; refusing to replace an existing release."
+          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
+          if gh release view v0.2.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'v0.2.0 already exists. No changes made.'
             exit 0
           fi
+          cat > notes.md <<'NOTES'
+          ## Vostok Labs Standalone v0.2.0 — simplified Windows edition
 
-          cat > release-notes.md <<'NOTES'
-          ## Vostok Labs Standalone v0.1.0 — Windows
+          The Windows app now opens directly to the **Generators** catalogue. Removes the Vostok Labs home, Licences, FAQ and Coming Soon pages/tiles from the desktop package, plus MakerWorld/Coffee shortcuts and the footer with its extra links.
 
-          Private, personal-use Windows desktop edition of Vostok Labs' hub and ten local web generators.
+          The bundled generator apps and product listings remain intact; the public website was not changed.
 
-          ### Included
-          - Windows x64 NSIS installer (recommended)
-          - Windows x64 application executable (requires WebView2)
-          - Offline-packaged hub pages, images, fonts, models, and bundled generator apps
-          - Existing 3D model exporters, geometry workers, and 3D previews
-          - Native Windows Save As dialogs for HTML download exports
-          - External links opened in the default web browser
+          ### Downloads
+          - Windows x64 installer (recommended)
+          - Application executable (requires Microsoft WebView2)
 
-          ### Installation
-          Download and run the setup executable on Windows. This release is unsigned, so Windows SmartScreen may display a warning.
-
-          ### Licensing
-          Original Vostok Labs attribution and upstream CC BY-NC-ND 4.0 terms are retained. This modified desktop edition is maintained in a private repository for personal, noncommercial use, not for public redistribution.
+          ### Notes
+          Unsigned builds may cause a Windows SmartScreen prompt.
+          Original Vostok Labs license and attribution are retained. Private, personal and noncommercial use only; this modified desktop edition is not intended for public redistribution.
           NOTES
-
-          gh release create v0.1.0 "$installer" "$executable" \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Vostok Labs Standalone v0.1.0 — Windows" \
-            --notes-file release-notes.md
+          gh release create v0.2.0 "$installer" "$executable" \
+            --repo "$GITHUB_REPOSITORY" --target "$WINDOWS_COMMIT" \
+            --title 'Vostok Labs Standalone v0.2.0 — Windows' --notes-file notes.md
