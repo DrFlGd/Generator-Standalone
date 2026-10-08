@@ -19,7 +19,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh run watch 37851478909 --repo "$GITHUB_REPOSITORY" --exit-status
+        run: gh run watch 37851626108 --repo "$GITHUB_REPOSITORY" --exit-status
 
       - name: Verify private repository and successful desktop build
         shell: bash
@@ -29,9 +29,9 @@ jobs:
           set -euo pipefail
           test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
           test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.fork')" = false
-          run_id=37851478909
+          run_id=37851626108
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.conclusion')" = success
-          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.head_sha')" = bf6aea42f066532ff72ff4c55c7f473f3ac000d4
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.head_sha')" = 028772f51d3990fd276b6367b6d1c530615a67e5
 
       - name: Download validated Windows installer and executable
         shell: bash
@@ -39,7 +39,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh run download 37851478909 --repo "$GITHUB_REPOSITORY" --name vostoklabs-standalone-windows-x64 --dir release-assets
+          gh run download 37851626108 --repo "$GITHUB_REPOSITORY" --name vostoklabs-standalone-windows-x64 --dir release-assets
 
       - name: Publish version 0.1.0 privately
         shell: bash
