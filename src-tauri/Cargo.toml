@@ -1,6 +1,6 @@
 [package]
 name = "vostoklabs-standalone"
-version = "0.2.0"
+version = "0.3.0"
 description = "Windows desktop edition of Vostok Labs tools"
 authors = ["Vostok Labs contributors"]
 edition = "2021"
