@@ -4,6 +4,24 @@
   if (!window.__TAURI__) return;
   const api = window.__TAURI__;
 
+  // Keep the original Blob alive while the Windows Save As dialog is open.
+  // Generators create a blob: URL, click its download link and revoke the URL
+  // shortly afterwards. Fetching that revoked URL after the dialog closes
+  // loses the export. Capture the Blob synchronously during the click instead.
+  const downloadableBlobs = new Map();
+  const createObjectURL = URL.createObjectURL.bind(URL);
+  const revokeObjectURL = URL.revokeObjectURL.bind(URL);
+  URL.createObjectURL = (object) => {
+    const url = createObjectURL(object);
+    if (object instanceof Blob) downloadableBlobs.set(url, object);
+    return url;
+  };
+  URL.revokeObjectURL = (url) => {
+    downloadableBlobs.delete(url);
+    return revokeObjectURL(url);
+  };
+
+
   // Generator top bars are created dynamically by each independent app bundle.
   // Make the sole remaining link lead to this packaged app, not the web hub.
   const setHomeLink = (anchor) => {
@@ -42,14 +60,29 @@
     }
     const href = new URL(link.href, location.href);
 
-    // WebView2 download anchors (including programmatic a.click()) use a
-    // Windows Save As dialog. Tauri's dialog scopes only the chosen file.
+    // Handle download anchors (including programmatic a.click()) ourselves.
+    // Tauri's save dialog grants fs access only to the selected destination.
     if (link.hasAttribute('download')) {
       event.preventDefault();
       if (!api.dialog?.save || !api.fs?.writeFile) {
         window.alert('Desktop file-saving components are unavailable.');
         return;
       }
+
+      // Start reading BEFORE awaiting the file picker. For normal generator
+      // exports we have the Blob itself, so URL.revokeObjectURL cannot
+      // invalidate the bytes. For data/static links, start fetch immediately.
+      const sourceBlob = downloadableBlobs.get(href.href);
+      const fileBytes = sourceBlob
+        ? sourceBlob.arrayBuffer().then((data) => new Uint8Array(data))
+        : fetch(href.href).then(async (response) => {
+            if (!response.ok) throw new Error('Export read failed: HTTP ' + response.status);
+            return new Uint8Array(await response.arrayBuffer());
+          });
+      // A cancelled picker still has a pending file read: observe rejections
+      // without turning a legitimate cancellation into an unhandled error.
+      void fileBytes.catch(() => {});
+
       void (async () => {
         try {
           const fileName = (link.getAttribute('download') || href.pathname.split('/').pop() || 'download.bin')
@@ -60,9 +93,9 @@
             filters: [{ name: ext.toUpperCase(), extensions: [ext] }],
           });
           if (!destination) return;
-          const response = await fetch(href.href);
-          if (!response.ok) throw new Error('Export read failed: HTTP ' + response.status);
-          await api.fs.writeFile(destination, new Uint8Array(await response.arrayBuffer()));
+          const bytes = await fileBytes;
+          await api.fs.writeFile(destination, bytes);
+          console.info('Desktop export saved:', destination, '(' + bytes.byteLength + ' bytes)');
         } catch (error) {
           console.error('Desktop save failed:', error);
           window.alert('Could not save the file: ' + String(error));

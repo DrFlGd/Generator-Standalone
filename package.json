@@ -57,7 +57,8 @@
     "build:laserBox": "pnpm --filter laser-box build",
     "build:desktop": "node scripts/build-desktop.mjs",
     "desktop:icons": "npx --yes @tauri-apps/cli@2 icon apps/hub/public/favicon.png --output src-tauri/icons",
-    "desktop:build": "pnpm desktop:icons && npx --yes @tauri-apps/cli@2 build"
+    "desktop:build": "pnpm desktop:icons && npx --yes @tauri-apps/cli@2 build",
+    "test:desktop-bridge": "node scripts/test-desktop-bridge.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.2",

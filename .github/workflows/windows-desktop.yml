@@ -47,6 +47,8 @@ jobs:
           workspaces: src-tauri
       - name: Install monorepo dependencies
         run: pnpm install --frozen-lockfile
+      - name: Test native Windows export bridge
+        run: node scripts/test-desktop-bridge.mjs
       - name: Build Windows desktop installer
         run: pnpm desktop:build
       - name: Upload Windows executables
