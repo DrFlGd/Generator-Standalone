@@ -1,7 +1,7 @@
 {
   "name": "vostok-labs-tools",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "packageManager": "pnpm@10.8.1",
   "scripts": {
     "new:generator": "node scripts/new-generator.mjs",

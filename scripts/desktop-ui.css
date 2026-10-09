@@ -1,0 +1,10 @@
+/* Windows/Tauri only — injected into desktop-dist, not web builds. */
+/* Every generator has the same top bar: retain only the catalogue return link. */
+.vl-topbar > .vl-topbar-group:not(:first-child) { display: none !important; }
+.vl-topbar > .vl-topbar-group:first-child > :not(:first-child) { display: none !important; }
+.vl-topbar > :not(.vl-topbar-group) { display: none !important; }
+.vl-topbar { justify-content: flex-start !important; }
+
+/* The catalogue IS the desktop home, so no logo/navigation bar or empty column. */
+.hub-page--desktop-home { grid-template-columns: minmax(0, 1fr) !important; }
+.hub-page--desktop-home > .hub-rail { display: none !important; }

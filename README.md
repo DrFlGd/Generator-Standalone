@@ -31,3 +31,7 @@ The desktop-specific bridge opens external links in the system browser, routes h
 The **Windows desktop package** now launches directly into the Generators catalogue. The static Vostok Labs home, Licences, FAQ, Coming Soon cards, rail MakerWorld/Coffee shortcuts, and site footer (including redundant links) are removed from packaged desktop HTML. The corresponding unneeded page HTML files are excluded from the Windows bundle. Generator cards and their working local apps remain available, while the public website and source assets are preserved. Upstream licence and attribution notices remain in the repository.
 
 The packaged catalogue root is / ` (rather than the old /make/` page). The older desktop builds remain available under their original release tags.
+
+### Windows v0.3.0: single return button
+
+The Tauri-only package now removes the redundant logo/navigation control on the Generators home page. Generator applications retain **See all generators** as the only top-bar control, and that link opens the local desktop catalogue. The packaged hub's individual generator detail and topic pages also show only a **See all generators** return link. These changes are injected at desktop packaging time; the web builds and their shared UI kit remain unchanged.

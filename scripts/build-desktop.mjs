@@ -51,6 +51,7 @@ for (const app of apps) {
 // The bridge is loaded on every generated HTML page so the desktop behavior
 // survives navigating between independently built generators and hub pages.
 const bridgeTag = '<script defer src="/desktop-bridge.js"></script>';
+const desktopStyleTag = '<link rel="stylesheet" href="/desktop-ui.css">';
 function patchHtml(directory) {
   for (const item of readdirSync(directory, { withFileTypes: true })) {
     const path = join(directory, item.name);
@@ -58,14 +59,17 @@ function patchHtml(directory) {
     else if (item.isFile() && item.name.endsWith('.html')) {
       const html = readFileSync(path, 'utf8');
       if (!html.includes('</head>')) throw new Error('Malformed HTML: ' + path);
-      if (!html.includes(bridgeTag)) {
-        writeFileSync(path, html.replace('</head>', '  ' + bridgeTag + '\n</head>'));
+      if (!html.includes(bridgeTag) || !html.includes(desktopStyleTag)) {
+        writeFileSync(path, html.replace('</head>',
+          '  ' + desktopStyleTag + '\n  ' + bridgeTag + '\n</head>'));
       }
     }
   }
 }
 patchHtml(output);
 cpSync(join(root, 'scripts', 'desktop-bridge.js'), join(output, 'desktop-bridge.js'));
+cpSync(join(root, 'scripts', 'desktop-ui.css'), join(output, 'desktop-ui.css'));
+
 
 // The desktop launcher is the Generators page. Prune pages and navigation
 // irrelevant to a private desktop catalogue; leave the website untouched.
@@ -99,15 +103,22 @@ for (const htmlFile of hubFiles) {
   const rail = document.querySelector('nav.hub-rail');
   if (!rail) throw new Error('Missing hub navigation in ' + htmlFile);
 
-  // Keep the Vostok Labs branding, but it now returns to Generators.
-  const logo = rail.querySelector('.hub-rail__logo');
-  if (logo) {
-    logo.setAttribute('href', '/');
-    logo.setAttribute('aria-label', 'Generators home');
+  // The Windows catalogue has no navigation/header control at all.
+  // Detail/topic pages keep exactly one clear return link to the catalogue.
+  const isDesktopHome = htmlFile === join(output, 'index.html');
+  if (isDesktopHome) {
+    rail.remove();
+    document.querySelector('.hub-page')?.classList.add('hub-page--desktop-home');
+  } else {
+    rail.querySelector('.hub-rail__logo')?.remove();
+    const generatorLink = rail.querySelector('a[href="/make/"]');
+    if (!generatorLink) throw new Error('Missing Generators return link: ' + htmlFile);
+    generatorLink.setAttribute('href', '/');
+    generatorLink.removeAttribute('target');
+    generatorLink.removeAttribute('rel');
+    generatorLink.querySelector('.vl-tool-rail__label')?.replaceChildren('See all generators');
+    generatorLink.setAttribute('aria-label', 'See all generators');
   }
-  const generatorLink = rail.querySelector('a[href="/make/"]');
-  if (!generatorLink) throw new Error('Missing Generators navigation in ' + htmlFile);
-  generatorLink.setAttribute('href', '/');
 
   // Licences, FAQ, MakerWorld and Coffee are not desktop navigation.
   for (const anchor of [...rail.querySelectorAll('a[href]')]) {
@@ -145,6 +156,18 @@ for (const htmlFile of hubFiles) {
 const home = readFileSync(join(output, 'index.html'), 'utf8');
 if (!home.includes('Generators') || !home.includes('data-catalogue-filter')) {
   throw new Error('Invalid Windows Generators start page');
+}
+if (home.includes('hub-rail__logo') || home.includes('nav class="vl-tool-rail') ||
+    !home.includes('hub-page--desktop-home')) {
+  throw new Error('Unwanted desktop home navigation or logo remains');
+}
+for (const path of [join(output, 'desktop-ui.css'), join(output, 'desktop-bridge.js')]) {
+  if (!existsSync(path)) throw new Error('Missing desktop UI asset: ' + path);
+}
+for (const htmlFile of hubFiles.filter((file) => file !== join(output, 'index.html'))) {
+  const html = readFileSync(htmlFile, 'utf8');
+  if (html.includes('hub-rail__logo')) throw new Error('Redundant logo in ' + htmlFile);
+  if (!html.includes('See all generators')) throw new Error('Missing home link: ' + htmlFile);
 }
 if (home.includes('id="coming-soon"') || home.includes('class="hub-footer"')) {
   throw new Error('Unwanted Windows landing-page sections remain');

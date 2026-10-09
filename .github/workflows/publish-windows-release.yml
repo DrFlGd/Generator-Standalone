@@ -1,4 +1,4 @@
-name: Publish private Windows v0.2.0 release
+name: Publish private Windows v0.3.0 release
 
 on:
   workflow_run:
@@ -41,7 +41,7 @@ jobs:
           build_sha="$(gh api "repos/$repo/actions/runs/$run_id" --jq '.head_sha')"
           test -n "$build_sha"
           version="$(gh api "repos/$repo/contents/src-tauri/tauri.conf.json?ref=$build_sha" --jq '.content' | base64 -d | jq -r '.version')"
-          test "$version" = 0.2.0
+          test "$version" = 0.3.0
           echo "WINDOWS_RUN_ID=$run_id" >> "$GITHUB_ENV"
           echo "WINDOWS_COMMIT=$build_sha" >> "$GITHUB_ENV"
 
@@ -64,14 +64,14 @@ jobs:
           test -n "$installer" && test -s "$installer"
           test -n "$executable" && test -s "$executable"
           test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
-          if gh release view v0.2.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo 'v0.2.0 already exists. No changes made.'
+          if gh release view v0.3.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'v0.3.0 already exists. No changes made.'
             exit 0
           fi
           cat > notes.md <<'NOTES'
-          ## Vostok Labs Standalone v0.2.0 — simplified Windows edition
+          ## Vostok Labs Standalone v0.3.0 — simplified Windows edition
 
-          The Windows app now opens directly to the **Generators** catalogue. Removes the Vostok Labs home, Licences, FAQ and Coming Soon pages/tiles from the desktop package, plus MakerWorld/Coffee shortcuts and the footer with its extra links.
+          The desktop catalogue remains the startup page and now has no redundant logo button or navigation bar. Each individual generator keeps only the **See all generators** control in its top bar, which returns to the packaged catalogue. Other top-bar controls are excluded from the Windows edition.
 
           The bundled generator apps and product listings remain intact; the public website was not changed.
 
@@ -83,6 +83,6 @@ jobs:
           Unsigned builds may cause a Windows SmartScreen prompt.
           Original Vostok Labs license and attribution are retained. Private, personal and noncommercial use only; this modified desktop edition is not intended for public redistribution.
           NOTES
-          gh release create v0.2.0 "$installer" "$executable" \
+          gh release create v0.3.0 "$installer" "$executable" \
             --repo "$GITHUB_REPOSITORY" --target "$WINDOWS_COMMIT" \
-            --title 'Vostok Labs Standalone v0.2.0 — Windows' --notes-file notes.md
+            --title 'Vostok Labs Standalone v0.3.0 — Windows' --notes-file notes.md
