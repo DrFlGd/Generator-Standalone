@@ -71,7 +71,7 @@ jobs:
           cat > notes.md <<'NOTES'
           ## Vostok Labs Standalone v0.4.0 — simplified Windows edition
 
-          Removed both post-export licence interruptions from the Tauri desktop build: the centre-screen **Download started** licence modal and the top-right **Download started** licence reminder. Exports and native Save As still work as before. The normal website retains its licence disclosures and download prompts.
+          Removed both post-export licence interruptions from the Tauri desktop build: the centre-screen **Download started** licence modal and the top-right **Download started** licence reminder. Fixed Windows Save As writing no files: generated Blob bytes are now captured before showing the native file picker, so a revoked temporary download URL cannot erase the export. The centre-screen **Download started** licence modal and the top-right reminder are also removed from the Tauri build. Normal web behavior and upstream licence metadata remain unchanged.
 
           The bundled generator apps and product listings remain intact; the public website was not changed.
 
