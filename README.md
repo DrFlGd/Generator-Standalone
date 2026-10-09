@@ -35,3 +35,7 @@ The packaged catalogue root is / ` (rather than the old /make/` page). The older
 ### Windows v0.3.0: single return button
 
 The Tauri-only package now removes the redundant logo/navigation control on the Generators home page. Generator applications retain **See all generators** as the only top-bar control, and that link opens the local desktop catalogue. The packaged hub's individual generator detail and topic pages also show only a **See all generators** return link. These changes are injected at desktop packaging time; the web builds and their shared UI kit remain unchanged.
+
+### Windows v0.4.0: uninterrupted exports
+
+In the Tauri Windows edition, exporting a model no longer opens the centre-screen **Download started** commercial-licence modal or the upper-right commercial-licence reminder. The shared UI now detects the Tauri runtime even when the separate DesktopHost environment flag is unset. Exports, native Windows Save As, error notifications and the upstream licensing data/attribution stay intact. The web edition continues to show the original licence prompts.

@@ -3,7 +3,20 @@ import { el } from '../dom';
 import { isDesktop, noopHandle, renderNothing } from '../host-env';
 import { holdModal } from './modal';
 
-const fmt = (n: number) => `$${n.toLocaleString('en-US')}`;
+const fmt = (n: number) => `${n.toLocaleString('en-US')}`;
+
+// Standalone uses Tauri rather than the embedding DesktopHost API.
+// No host sets __VOSTOK_HOST_ENV__ in that Windows WebView, so isDesktop()
+// alone misidentifies it as a browser and displays both post-export prompts.
+// Detect Tauri locally to this licence UI; do not change export behavior,
+// notifications for actual errors, or the real web app.
+function suppressPostExportLicenceUI(): boolean {
+  const host = globalThis as typeof globalThis & {
+    __TAURI__?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+  };
+  return isDesktop() || Boolean(host.__TAURI__ || host.__TAURI_INTERNALS__);
+}
 
 export interface LicenseModalOptions {
   /** Green pill text at the top, e.g. 'Download started'. Pass null to hide. */
@@ -17,7 +30,7 @@ export interface LicenseModalOptions {
  *  Deliberately emoji-free — this is the screen that asks people for money, and
  *  it reads as more serious without them. */
 export function openLicenseModal(opts: LicenseModalOptions = {}): { close(): void } {
-  if (isDesktop()) return noopHandle();
+  if (suppressPostExportLicenceUI()) return noopHandle();
   const s = BRAND.pricing.subscription;
   let release = (): void => {};
 
@@ -98,6 +111,7 @@ let exportsThisPage = 0;
  * it cannot be half-copied again. `badge` only affects the first-export window.
  */
 export function licenseAfterExport(opts: Pick<LicenseModalOptions, 'badge'> = {}): void {
+  if (suppressPostExportLicenceUI()) return;
   exportsThisPage += 1;
   if (exportsThisPage === 1) openLicenseModal(opts);
   else licenseReminderToast();
@@ -128,7 +142,7 @@ let liveReminder: { card: HTMLElement; close: () => void; restart: () => void } 
  * and the only thing the new export changes is how long it should stay.
  */
 export function licenseReminderToast(): { close(): void } {
-  if (isDesktop()) return noopHandle();
+  if (suppressPostExportLicenceUI()) return noopHandle();
   if (liveReminder) {
     liveReminder.restart();
     return { close: liveReminder.close };
