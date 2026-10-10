@@ -2,7 +2,7 @@ import '@vostok/ui-kit/styles.css';
 import '@vostok/plates/plates.css';
 import './style.css';
 import {
-  appShell, topbarLinks, generatorHeader, panelCredit, section, collapsibleSection,
+  appShell, linkButton, generatorHeader, panelCredit, section, collapsibleSection,
   dropZone, sliderRow, selectField, toggleSwitch, button, stageStatus,
   sidebarFooter, dialog, toast, readProjectFile, markProject, buildLoop, workerClient,
   syncControls, el, ICONS, type ProjectShape,
@@ -138,7 +138,7 @@ const footer = sidebarFooter({
 });
 const PROJECT_FILE: ProjectShape = {app:'led-lightbox',keys:['size','depth','outline'] satisfies (keyof LightboxSettings)[]};
 const shell=appShell({
-  topbar:topbarLinks({themeToggle:false}),
+  topbar:el('header',{className:'vl-topbar'},[linkButton({label:'See all generators',href:'/',icon:ICONS.grid})]),
   left:{scroll:[
     generatorHeader({title:'Image LED Lightbox',description:'Turn a picture silhouette into a hollow lightbox with an LED mounting ledge and cable exits.',hideCredit:true}),
     collapsibleSection({title:'1 · Box dimensions',body:[sliders.size,sliders.depth,sliders.wall,sliders.back]}),
