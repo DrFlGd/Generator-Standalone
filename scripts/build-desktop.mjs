@@ -11,6 +11,7 @@ const output = resolve(root, 'desktop-dist');
 const apps = [
   { name: 'hub', folder: 'hub', routes: [''] },
   { name: 'name-keychain', folder: 'name-keychain', routes: ['name-keychain'] },
+  { name: 'led-lightbox', folder: 'led-lightbox', routes: ['led-lightbox'] },
   { name: 'clicker-generator', folder: 'clicker-generator', routes: ['Clicker-Generator', 'clicker'] },
   { name: 'keycap-generator', folder: 'keycap-generator', routes: ['SVG-keycap-generator', 'keycap'] },
   { name: 'magnet-generator', folder: 'magnet-generator', routes: ['magnet'] },
@@ -107,6 +108,26 @@ for (const htmlFile of hubFiles) {
   // Detail/topic pages keep exactly one clear return link to the catalogue.
   const isDesktopHome = htmlFile === join(output, 'index.html');
   if (isDesktopHome) {
+    // This is a private Windows-only generator: keep the public website catalogue intact.
+    const shelf = document.querySelector('#web-apps .hub-grid');
+    if (!shelf) throw new Error('Missing web-app shelf for LED Lightbox card.');
+    const card = document.createElement('article');
+    card.setAttribute('class', 'hub-card');
+    card.setAttribute('data-card', '');
+    card.setAttribute('data-topics', 'boxes desk-home signs');
+    card.setAttribute('data-process', '3d-print');
+    card.setAttribute('data-search', 'image led lightbox box silhouette led strips illuminated sign wire hole');
+    card.innerHTML =
+      '<a class="hub-card__media" href="/led-lightbox/" tabindex="-1" aria-hidden="true">' +
+      '<img class="hub-thumb" src="/led-lightbox/preview.svg" alt="" loading="lazy" width="800" height="600"></a>' +
+      '<div class="hub-card__body">' +
+      '<p class="hub-card__meta">3D print · Offline desktop</p>' +
+      '<h3 class="hub-card__name"><a href="/led-lightbox/">Image LED Lightbox</a></h3>' +
+      '<p class="hub-card__blurb" title="Custom hollow LED boxes from a logo or silhouette image">Custom hollow LED boxes from a logo or silhouette image.</p>' +
+      '<div class="hub-card__actions"><a class="vl-btn vl-btn--primary" href="/led-lightbox/">Open app</a></div></div>';
+    shelf.prepend(card);
+    const heading = document.querySelector('#web-apps .hub-section__title');
+    if (heading) heading.textContent = 'Web apps · ' + shelf.querySelectorAll('[data-card]').length;
     rail.remove();
     document.querySelector('.hub-page')?.classList.add('hub-page--desktop-home');
   } else {
@@ -154,7 +175,7 @@ for (const htmlFile of hubFiles) {
   writeFileSync(htmlFile, document.toString());
 }
 const home = readFileSync(join(output, 'index.html'), 'utf8');
-if (!home.includes('Generators') || !home.includes('data-catalogue-filter')) {
+if (!home.includes('Generators') || !home.includes('data-catalogue-filter') || !home.includes('Image LED Lightbox')) {
   throw new Error('Invalid Windows Generators start page');
 }
 if (home.includes('hub-rail__logo') || home.includes('nav class="vl-tool-rail') ||
