@@ -1,22 +1,42 @@
-# Image LED Lightbox — initial offline generator
+# Image LED Lightbox — offline generator
 
-Input a PNG, JPG or WebP image with one recognizable outer silhouette. The existing
-@vostok/trace pipeline extracts its largest outside contour; interior cutouts and image
-colours are deliberately ignored for now.
+Upload a PNG, JPG or WebP. The existing **@vostok/trace** pipeline removes an
+optional flat background, simplifies/posterizes the image into 1–6 colours and
+traces its outer silhouette **and colour components in the same pass**.
 
-Makes one printable Manifold solid: a solid back on Z=0, open top/front on Z=depth,
-outer profile walls and a fused flat inner shelf for gluing LED tape. Optional right
-side and/or back wire pass-through holes. The shelf has a width and rise in millimetres.
+Manifold WASM builds a print-ready assembly:
+- A hollow shell with a solid back, a raised *flat interior LED tape ledge*
+  for glue-on LED strips, and optional right-side/back wire holes.
+- A **separate glue-on translucent diffuser cover**, matching the outer
+  silhouette, with a **variable overall thickness of 0.6–3.0 mm**.
+- Optional printable colour face regions: up to 6 image colours, each as
+  its own 0.4 mm-tall 3MF filament part, *inlaid* in the top of the diffuser.
+  The white diffuser underneath + its white top regions occupy the remaining
+  thickness; the coloured parts do not overlap the white face.
 
-Export 3MF. The saved JSON project contains the traced outline, so loading the
-project does not require the original image. Geometry runs in a web worker and
-does not use a network connection.
+The **shell and cover are laid side by side on the build plate**, not in
+an assembled/floating state. Each has its own 3MF object group for the slicer;
+every colour in the cover retains its own filament assignment. The cover is
+flat and **glues to the TOP RIM of the shell**; this version does not include
+a snap-fit, diffuser retention lip or screw mount. Confirm bed fit at large sizes.
 
-Limitations: no diffuser face, snap-on front, lettering, internal image colour
-regions, mounting bosses, or electronics design. Small/fragmented/concave shapes
-may not have room for the selected wall and shelf widths. Preview each hole and
-test-fit before printing. The back hole is placed in the widest inner region and
-the side hole exits in +X from that region.
+Saved JSON projects contain both the traced outer ring and the colour
+components, so the image need not be uploaded again to rebuild/export.
+To choose a *different* palette quantization in a loaded project, re-upload
+the source image; slider changes to the colour count require it.
 
-Desktop menu entry is injected in scripts/build-desktop.mjs only; the upstream
-web catalogue and licensing metadata are intentionally unchanged.
+Processing runs entirely offline. Use translucent white filament for the
+diffuser and choose print-compatible colour filaments if you want illumination
+through the artwork. Appearance and minimum thickness are material, printer,
+LED spacing and diffusion dependent: test a small print before assembly.
+The 0.4 mm face inlay is a printable 2-layer design at 0.2 mm layer height,
+not a true CMYK photo or a lithophane.
+
+Known limitations: a single largest outside silhouette (not separate body
+islands), automatic colour posterization (not pixel-faithful photos), tiny
+components dropped, no physical fit validation or electrical certification.
+The image can be detailed but very irregular narrow silhouettes may not
+have enough material for the specified walls and LED ledge.
+
+Desktop menu is private and injected by scripts/build-desktop.mjs; the
+upstream website catalogue and original licensing are unaffected.
