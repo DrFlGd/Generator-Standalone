@@ -49,6 +49,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Test native Windows export bridge
         run: node scripts/test-desktop-bridge.mjs
+      - name: Test LED lightbox geometry
+        run: pnpm --filter led-lightbox test
       - name: Build Windows desktop installer
         run: pnpm desktop:build
       - name: Upload Windows executables

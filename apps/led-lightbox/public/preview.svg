@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#152c43"/><stop offset="1" stop-color="#2c5070"/></linearGradient></defs>
+<rect width="800" height="600" fill="url(#bg)"/>
+<g transform="translate(400 300)">
+<path d="M-225-135h450v270h-450z" fill="#101c29" stroke="#7fc7ed" stroke-width="22"/>
+<path d="M-190-100h380v200h-380z" fill="none" stroke="#f3d583" stroke-width="20"/>
+<path d="M-166-77h332v154h-332z" fill="#5c92a6" fill-opacity=".34"/>
+<circle cx="0" cy="0" r="18" fill="#f3d583"/>
+<path d="M225 0h44" stroke="#f3d583" stroke-width="8" stroke-linecap="round"/>
+</g>
+<text x="400" y="520" fill="#fff" font-size="34" text-anchor="middle" font-family="sans-serif">IMAGE LED LIGHTBOX</text>
+</svg>
