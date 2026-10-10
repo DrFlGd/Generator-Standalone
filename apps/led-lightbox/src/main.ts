@@ -50,15 +50,13 @@ function rebuild(refit = false) {
   if (refit) refitNext = true;
   loop.request();
 }
-function simplifyRing(ring: Ring, maxPoints: number): Ring {
-  const stride = Math.max(1, Math.ceil(ring.length / maxPoints));
-  return ring.filter((_, i) => i % stride === 0);
-}
 function keepLargest(rings: Ring[]): Ring {
   const filtered = rings.filter((r) => r.length >= 3)
     .sort((a, b) => Math.abs(signedArea(b)) - Math.abs(signedArea(a)));
   if (!filtered.length) throw new Error('No silhouette detected. Use a clear opaque subject on a transparent or flat background.');
-  const chosen = simplifyRing(filtered[0]!, 1800);
+  const outer = filtered[0]!;
+  const stride = Math.max(1, Math.ceil(outer.length / 1800));
+  const chosen = outer.filter((_, i) => i % stride === 0);
   if (Math.abs(signedArea(chosen)) < 0.0001) throw new Error('The traced subject is too small.');
   return chosen;
 }
@@ -79,7 +77,10 @@ function retrace(): void {
   const artwork: ArtworkRegion[] = result.regions.map((region) => ({
     color: [...region.quantRgb],
     components: region.components.slice(0, 120).map((c) =>
-      c.rings.slice(0, 20).map((ring) => simplifyRing(ring, 1800))).filter((rings) => rings.length > 0),
+      c.rings.slice(0, 20).map((ring) => {
+        const stride = Math.max(1, Math.ceil(ring.length / 1800));
+        return ring.filter((_, i) => i % stride === 0);
+      })).filter((rings) => rings.length > 0),
   })).filter((r) => r.components.length > 0);
   settings.outline = outline;
   settings.artwork = artwork;
