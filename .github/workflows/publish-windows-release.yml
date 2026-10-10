@@ -1,4 +1,4 @@
-name: Publish private Windows v0.5.0 release
+name: Publish private Windows v0.6.0 release
 
 on:
   workflow_run:
@@ -41,7 +41,7 @@ jobs:
           build_sha="$(gh api "repos/$repo/actions/runs/$run_id" --jq '.head_sha')"
           test -n "$build_sha"
           version="$(gh api "repos/$repo/contents/src-tauri/tauri.conf.json?ref=$build_sha" --jq '.content' | base64 -d | jq -r '.version')"
-          test "$version" = 0.5.0
+          test "$version" = 0.6.0
           echo "WINDOWS_RUN_ID=$run_id" >> "$GITHUB_ENV"
           echo "WINDOWS_COMMIT=$build_sha" >> "$GITHUB_ENV"
 
@@ -64,16 +64,16 @@ jobs:
           test -n "$installer" && test -s "$installer"
           test -n "$executable" && test -s "$executable"
           test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
-          if gh release view v0.5.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo 'v0.5.0 already exists. No changes made.'
+          if gh release view v0.6.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'v0.6.0 already exists. No changes made.'
             exit 0
           fi
           cat > notes.md <<'NOTES'
-          ## Vostok Labs Standalone v0.5.0 — simplified Windows edition
+          ## Vostok Labs Standalone v0.6.0 — simplified Windows edition
 
-          Added **Image LED Lightbox** as a new private desktop-only generator. Import PNG/JPG/WebP silhouettes, generate an open-front hollow box with a solid back and internal flat LED-tape mounting shelf, select side and/or rear wire holes, preview in 3D, and export as 3MF. Saved project JSON includes the silhouette. Existing export fixes remain in place.
+          **Image LED Lightbox now includes an adjustable translucent diffuser cover and internal image colours.** The existing image-preparation system traces up to 6 posterized colour regions and exports a white diffuser plus separately coloured 0.4 mm top inlays. Choose the total diffuser thickness (0.6–3 mm). The shell and glue-on front cover are separate 3MF objects, laid side by side for printing. Saved projects preserve the colour outlines and diffuser settings. The LED ledge, cable exits, and previous export fixes remain intact.
 
-          The existing generator apps and public website catalogue remain unchanged; the Lightbox menu card is injected only for the private Windows desktop build.
+          The public website catalogue remains unchanged; the Lightbox and its improved diffuser are bundled only with the private Windows desktop build.
 
           ### Downloads
           - Windows x64 installer (recommended)
@@ -83,6 +83,6 @@ jobs:
           Unsigned builds may cause a Windows SmartScreen prompt.
           Original Vostok Labs license and attribution are retained. Private, personal and noncommercial use only; this modified desktop edition is not intended for public redistribution.
           NOTES
-          gh release create v0.5.0 "$installer" "$executable" \
+          gh release create v0.6.0 "$installer" "$executable" \
             --repo "$GITHUB_REPOSITORY" --target "$WINDOWS_COMMIT" \
-            --title 'Vostok Labs Standalone v0.5.0 — Windows' --notes-file notes.md
+            --title 'Vostok Labs Standalone v0.6.0 — Windows' --notes-file notes.md

@@ -1,35 +1,42 @@
 # Image LED lightbox generator plan
 
-## Goal
-New offline desktop-menu generator for a hollow illuminated enclosure based on
-an uploaded silhouette image, with a glue-friendly LED strip shelf and side
-and/or rear cable exits.
+## v0.5.0: image-silhouette enclosure (completed)
+- PNG/JPG/WebP through local @vostok/trace.
+- Hollow one-part Manifold shell with solid back, glued LED strip ledge,
+  configurable wall/back/shelf dimensions and side/back wire exits.
+- Live 3D viewer, desktop-only menu entry, 3MF and saved JSON projects.
 
-## Initial deliverable (v0.5.0)
-1. Reuse the existing image tracer for local PNG/JPG/WebP input (largest silhouette only).
-2. Reuse Manifold WASM in a worker to extrude one hollow body with a solid back
-   and an open front, plus an integrated flat ledge at the inner wall.
-3. Adjustable overall size, box depth, side/back wall thickness, shelf width/rise,
-   cable-hole diameter and exit location (none/back/right/both).
-4. Live 3D preview, 3MF export via the native Save As bridge and JSON project
-   save/load retaining the traced silhouette.
-5. Desktop-only catalogue card; public upstream website remains unchanged.
-6. Basic geometry regression tests and Windows build pipeline validation.
+## v0.6.0: printable diffuser and internal colours
+- Use *the same* built-in image preparation run for shell silhouette and
+  colour-specific 2D contours (posterization from 1–6 colours).
+- Create separate full-face diffuser cover the same outside silhouette,
+  **glued to the shell's top wall**, with variable total thickness
+  (0.6–3.0 mm, 1.2 mm default).
+- Inlay every colour in the top 0.4 mm of the diffuser so white + colour
+  regions share a flat top rather than overlapping or floating.
+- Package shell and complete multicolour cover as separate 3MF groups
+  side-by-side with bottoms at Z=0, ready for slicer layout.
+- Retain the traced colour regions and diffuser options in the JSON project;
+  old projects receive a plain translucent cover by default.
+- Add geometry, watertightness, printable separation, alpha-image tracing,
+  thickness and colour regression checks, plus Windows CI installer check.
 
-## Future iterations
-- Detachable diffuser/front face with configurable snap/lip clearance.
-- Optional artwork panel, multi-colour face and transparent diffuser guidance.
-- LED recess/strip path length estimate and corner-radius constraints.
-- Hole position chooser and additional mounting tabs/bosses.
-- Multiple outlines, islands and explicit negative holes from artwork.
-- Material presets, minimum-feature diagnostics and actual printed fit testing.
+## Later options
+- Alternate cover styles: recessed friction fit, screw-down front, snap/lip
+  support and a separate assembled preview (without changing print layout).
+- Interactive palette picking, region/colour exclusion and per-colour thickness.
+- Color-aware lighting preview, automatic LED strip length, and standoff tabs.
+- Hole position chooser and additional mounting bosses.
+- Multi-island outlines and explicit negative body holes from artwork.
+- Filament transmission/material presets, minimum-feature diagnostics,
+  automated print-bed layout and printed fit validation.
 
-## Physical assumptions and limitations
-The backing lies on the bed; the enclosure opens upward (Z positive). The
-interior ledge is a fused horizontal ring near the back, suitable for
-self-adhesive LED strips placed flat and pointing toward the open front.
-Its width is not scaled with the silhouette. The +X side hole is cut by a
-horizontal cylinder from an interior point and may be unsuitable for highly
-branched shapes. This is a basic functional prototype, not a ready-to-install
-electrical device; LED strip thickness, temperatures, wiring, current limiting
-and diffuser clearance need physical testing.
+## Print and electrical assumptions
+The backing lies on the bed. The open shell is Z-up; the cover is laid
+**beside the shell** for printing and glued on later. The coloured artwork
+is planar segmented 3MF geometry (not a texture or full photographic
+reproduction). The diffuser white is intended to use translucent filament.
+LED strip thickness, brightness, thermal management, current limiting,
+glue material and diffuser transmission must be physically checked.
+The side wire exit is automatically drilled toward +X from a valid interior
+location and may be unsuitable for heavily branched silhouettes.
