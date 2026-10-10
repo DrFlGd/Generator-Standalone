@@ -75,7 +75,7 @@ function retrace(): void {
   // Commit the outline and the entire palette together: they share exact coordinates.
   const outline = keepLargest(result.outline);
   const artwork: ArtworkRegion[] = result.regions.map((region) => ({
-    color: [...region.quantRgb],
+    color: [...region.quantRgb] as ArtworkRegion['color'],
     components: region.components.slice(0, 120).map((c) =>
       c.rings.slice(0, 20).map((ring) => {
         const stride = Math.max(1, Math.ceil(ring.length / 1800));
