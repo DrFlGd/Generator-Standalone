@@ -338,3 +338,6 @@ export {
   SYMBOL_FIRST, SYMBOL_LAST, isSymbolChar, hasSymbol, codePointCount, nextSymbolChar, placeSymbol, shiftSymbol,
   type SymbolPlacement, type SymbolTransform,
 } from './symbols/rules';
+
+// Exact reusable Clicker / Lightbox image-preparation dialog.
+export { runWizard, type WizardResult } from './components/prepare-image';

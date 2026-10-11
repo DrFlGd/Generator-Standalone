@@ -69,6 +69,7 @@ import {
   thumbGrid,
   thumbTile,
   openSvgImport,
+  runWizard,
   fontChooser,
   symbolPickerButton,
   symbolTextField,
@@ -201,6 +202,26 @@ app.append(
     ]),
     el('div', { className: 'kit-masthead__tools' }, [themeToggle]),
   ]),
+);
+
+/* Shared Prepare Image dialog: live sample with real two-colour image pixels. */
+const preparedDemo = new Uint8ClampedArray(112 * 96 * 4);
+for (let y = 10; y < 86; y++) for (let x = 12; x < 100; x++) {
+  const p = (y * 112 + x) * 4;
+  preparedDemo[p] = x < 56 ? 238 : 36;
+  preparedDemo[p + 1] = x < 56 ? 122 : 137;
+  preparedDemo[p + 2] = x < 56 ? 32 : 238;
+  preparedDemo[p + 3] = 255;
+}
+app.append(
+  entry('runWizard()', 'Prepare Image', 'The original Clicker image wizard, shared by Clicker and LED Lightbox: choose colours, remove background, smooth contours, preview the trace and adjust the picture.',
+    button({ label: 'Open Prepare Image', emphasis: 'primary', onClick: () => runWizard({
+      baseImage: { width: 112, height: 96, data: preparedDemo },
+      initialColorCount: 2, initialSmoothing: 0.15,
+      initialRemoveBg: true, designMm: 120,
+      onComplete: (result) => toast('Prepared ' + result.colorCount + ' filament colours.', { kind: 'ok' }),
+    }) }),
+  ),
 );
 
 /* ---------- Chrome ---------- */
