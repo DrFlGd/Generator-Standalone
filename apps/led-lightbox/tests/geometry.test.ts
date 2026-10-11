@@ -197,12 +197,11 @@ const locations = sampleMarqueeHoles([guideSquare], 16, 2,
   [[-30,-30],[30,-30],[30,30],[-30,30]], 3);
 assert.equal(locations.length, 16, 'exact total number of holes');
 assert.equal(marqueeCircles(locations, 2).length, 16);
-const distances = locations.map((p, i) => {
-  const next = locations[(i + 1) % locations.length]!;
-  return Math.hypot(next[0] - p[0], next[1] - p[1]);
-});
-assert.ok(Math.max(...distances) - Math.min(...distances) < 0.001,
-  'even distance along straight square sides');
+assert.deepEqual(locations.slice(0, 4),
+  [[-15,-20],[-5,-20],[5,-20],[15,-20]],
+  'four equally spaced lights along the first side');
+assert.deepEqual(locations[4], [20,-15],
+  'arc-length spacing continues correctly round a corner');
 assert.throws(() => sampleMarqueeHoles([guideSquare], 240, 4,
   [[-30,-30],[30,-30],[30,30],[-30,30]], 3), /overlap|closely spaced/i);
 assert.throws(() => sampleMarqueeHoles([guideSquare], 8, 4,
