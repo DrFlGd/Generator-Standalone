@@ -40,3 +40,28 @@ have enough material for the specified walls and LED ledge.
 
 Desktop menu is private and injected by scripts/build-desktop.mjs; the
 upstream website catalogue and original licensing are unaffected.
+
+
+### Prepare Image and registration lips (v0.7.0)
+Uploading PNG/JPG/WebP opens the Clicker Generator's **same original**
+Prepare Image modal: background removal, per-colour keep switches, smoothing,
+exposure/contrast/saturation and other tone adjustments, side-by-side
+Original/Result previews, zoom and pan. Cancel leaves the existing lightbox
+unchanged. Confirm retraces with precisely the selected colours and adjusted
+image. Press **Prepare / adjust image** to reopen it while the original
+upload is still in memory. Saved projects keep traced output and settings
+without embedding the large source bitmap.
+
+Registration lip options:
+- **None:** flat glue-on diffuser as before.
+- **On diffuser:** a tongue on the underside of the diffuser mates with
+  the hollow inside of the shell. Use a radial gap to tune friction.
+- **On box:** a ridge around the shell rim fits a recessed annular
+  mating groove on the underside of the diffuser. This requires a diffuser
+  thickness greater than the lip height by at least 0.55 mm.
+
+All three share adjustable lip width, lip height and **clearance per side**.
+0.15–0.2 mm is a reasonable first test, but real press fit depends strongly
+on printer accuracy, shrinkage, perimeter count and filament. Colour parts
+are printed face-down for both lipped modes. At close fits, print a small
+fit test before printing a full-size design.

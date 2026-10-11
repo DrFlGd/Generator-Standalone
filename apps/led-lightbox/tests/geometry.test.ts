@@ -63,6 +63,59 @@ for (const thickness of [0.6, 1.2, 2.6]) {
   assert.ok(result.parts.slice(2).every(p => bounds(p.positions).min[2]! >= thickness - 0.401));
   verifyMeshes(result);
 }
+// Registration fits are printed face-down, with the mating feature exposed on top.
+for (const placement of ['cover', 'box'] as const) {
+  const result = buildLightbox(wasm, {
+    ...coerceSettings(DEFAULT_SETTINGS), artwork, lipPlacement: placement,
+    lipWidth: 1.2, lipHeight: 0.6, lipClearance: 0.2,
+  });
+  assert.equal(result.parts.length, 4, placement + ' mode keeps filament colour regions');
+  const shell = bounds(result.parts[0]!.positions);
+  const white = bounds(result.parts[1]!.positions);
+  assert.equal(shell.min[2], 0);
+  assert.equal(white.min[2], 0);
+  if (placement === 'cover') {
+    assert.ok(white.max[2]! > DEFAULT_SETTINGS.diffuserThickness + 0.5, 'cover tongue projects above diffuser in print orientation');
+    assert.ok(shell.max[2]! <= DEFAULT_SETTINGS.depth + 0.01, 'box unchanged in cover-tongue mode');
+  } else {
+    assert.ok(shell.max[2]! > DEFAULT_SETTINGS.depth + 0.5, 'shell ridge projects above rim');
+    assert.ok(white.max[2]! <= DEFAULT_SETTINGS.diffuserThickness + 0.01, 'diffuser contains matching recess without added height');
+  }
+  for (const part of result.parts.slice(2)) {
+    assert.ok(bounds(part.positions).max[2]! <= 0.401, 'color face prints face-down with registration lip');
+  }
+  verifyMeshes(result);
+}
+const boxGroove = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS), lipPlacement: 'box' });
+const flatCover = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS) });
+function meshVolume(p: (typeof flatCover.parts)[number]) {
+  const mesh = new wasm.Mesh({numProp:3, vertProperties:p.positions, triVerts:p.indices});
+  const m = wasm.Manifold.ofMesh(mesh);
+  const v = m.volume();
+  m.delete();
+  return v;
+}
+assert.ok(meshVolume(boxGroove.parts[1]!) < meshVolume(flatCover.parts[1]!),
+  'receiving groove removes material from the diffuser');
+assert.throws(() => buildLightbox(wasm, {
+  ...coerceSettings(DEFAULT_SETTINGS), lipPlacement: 'box', lipHeight: 1.2, diffuserThickness: 1.2,
+}), /thicker diffuser|solid roof/i);
+assert.throws(() => buildLightbox(wasm, {
+  ...coerceSettings(DEFAULT_SETTINGS), lipPlacement: 'cover', lipWidth: 45,
+}), /lip/i);
+const lipProject = coerceSettings({
+  ...DEFAULT_SETTINGS, lipPlacement: 'cover', lipWidth: 1.8, lipHeight: 1,
+  lipClearance: 0.15, smoothing: 0.25, limitedColors: [[242, 105, 13]],
+  preprocess: { contrast: 1.4, exposure: 1.1, keepBackground: true },
+});
+assert.equal(lipProject.lipPlacement, 'cover');
+assert.equal(lipProject.lipWidth, 1.8);
+assert.equal(lipProject.lipHeight, 1);
+assert.equal(lipProject.lipClearance, 0.15);
+assert.equal(lipProject.smoothing, 0.25);
+assert.deepEqual(lipProject.limitedColors, [[242, 105, 13]]);
+assert.equal(lipProject.preprocess.contrast, 1.4);
+assert.equal(lipProject.preprocess.keepBackground, true);
 const noColour = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS), artwork, includeColors: false });
 assert.equal(noColour.parts.length, 2);
 assert.throws(() => buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS), ledgeWidth: 90 }), /ledge/i);
@@ -89,4 +142,4 @@ const traced = processImage({data: pixels, width:W, height:H}, 2,
   {removeBg:true, smoothing:0.4, preserveDetail:true, designMm:120});
 assert.ok(traced.outline.length > 0, 'tracer returns shell silhouette');
 assert.ok(traced.regions.length >= 2, 'tracer retains both image colors');
-console.log('LED lightbox: shell, 2-colour inlaid diffuser, 3 thicknesses, cable exits, print separation, image tracing and saved settings passed.');
+console.log('LED lightbox: image tracing, colour diffuser, both registration-lip placements, groove clearance, thickness, printable orientation, all wire exits and project settings passed.');

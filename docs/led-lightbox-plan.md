@@ -40,3 +40,31 @@ LED strip thickness, brightness, thermal management, current limiting,
 glue material and diffuser transmission must be physically checked.
 The side wire exit is automatically drilled toward +X from a valid interior
 location and may be unsuitable for heavily branched silhouettes.
+
+## v0.7.0: original Clicker image wizard + registration press-fit tooling
+- Move Clicker's **exact Prepare Image dialog** to the shared UI kit and re-export
+  it from Clicker, so both apps use the same UI and processing options.
+- The Lightbox image import opens Prepare Image automatically; a button reopens
+  it with previous choices. Colour keep toggles, background matting, smoothing,
+  contrast/exposure/brightness/saturation, preview, zoom/pan and Confirm all work.
+- Only Confirm updates the box, using the *same adjusted pixels and palette* as
+  the wizard preview; Cancel preserves the existing model.
+- Settings and traced geometry persist with saved projects; photo re-adjustment
+  requires the original source to be uploaded again after re-opening a project.
+- Registration mode selector: **none / lip on diffuser / lip on box**.
+  - Cover male lip: an annular tongue on the cover's mating face slides into
+    the box interior; radial gap = configured tolerance per side.
+  - Box male lip: a ridge extending above the shell wall seats into a widened
+    annular groove in the cover; male/female profiles differ by the same
+    radial clearance per side.
+  - Adjustable tongue height, radial width and clearance (0–0.5 mm/side);
+    default 0.2 mm clearance.
+- When a lip is enabled, the diffuser artwork prints **face-down** (at Z=0),
+  leaving the lip or groove exposed on top for support-free fabrication.
+  Shell and diffuser remain separate printable 3MF groups.
+- Box-lip mode requires diffuser thickness >= lip height + 0.55 mm;
+  very tight or irregular outlines can fail profile offsets with a message.
+  Values are design starting points, not a guaranteed press fit.
+
+**Future**: print calibration coupons, automatic tight-radius reliefs,
+selective lip gaps near cable exits, retained assembled preview.
