@@ -69,7 +69,6 @@ import {
   thumbGrid,
   thumbTile,
   openSvgImport,
-  openPrepareImage,
   fontChooser,
   symbolPickerButton,
   symbolTextField,
@@ -111,6 +110,7 @@ import {
   type SymbolTransform,
 } from '@vostok/ui-kit';
 import { openSymbolChooser, symbolDrawing, type SymbolChoice } from '@vostok/ui-kit/symbols';
+import { openPrepareImage } from '@vostok/ui-kit/prepare-image';
 // The symbol rules on their own, as code with no DOM takes them.
 import { nextSymbolChar, shiftSymbol } from '@vostok/ui-kit/symbol-rules';
 import './demo.css';

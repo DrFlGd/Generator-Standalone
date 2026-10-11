@@ -339,5 +339,3 @@ export {
   type SymbolPlacement, type SymbolTransform,
 } from './symbols/rules';
 
-// Exact reusable Clicker / Lightbox image-preparation dialog.
-export { openPrepareImage, type WizardResult } from './components/prepare-image';
