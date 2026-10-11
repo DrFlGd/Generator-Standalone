@@ -1,6 +1,7 @@
 import { DEFAULT_PREPROCESS, type RGB, type Ring, type PreprocessParams } from '@vostok/trace';
 
-export type WireExit = 'none' | 'side' | 'back' | 'both';
+export type WireExit = 'none' | 'side' | 'back' | 'both' | 'dual';
+export type BorderColor = 'none' | 'white' | 'black';
 export type LipPlacement = 'none' | 'cover' | 'box';
 /** Geometry from the existing @vostok/trace image preparation/quantization pipeline. */
 export interface ArtworkRegion {
@@ -17,6 +18,15 @@ export interface LightboxSettings {
   ledgeHeight: number;
   holeDiameter: number;
   wireExit: WireExit;
+  /** Angles of the two independently placed radial side exits (0° = right, 90° = top). */
+  hole1Angle: number;
+  hole2Angle: number;
+  /** Position in the available wall height, 0% nearest the back, 100% nearest the front. */
+  hole1Depth: number;
+  hole2Depth: number;
+  /** Face border around the traced artwork (none retains the original small white edge). */
+  borderColor: BorderColor;
+  borderWidth: number;
   removeBackground: boolean;
   /** Thickness of the entire diffuser including its 0.4 mm multicolour face layer. */
   diffuserThickness: number;
@@ -40,19 +50,24 @@ export const DEFAULT_OUTLINE: Ring = [
 export const DEFAULT_SETTINGS: LightboxSettings = {
   size: 120, depth: 24, wall: 2.2, back: 2.4,
   ledgeWidth: 8, ledgeHeight: 2, holeDiameter: 5,
-  wireExit: 'back', removeBackground: true,
+  wireExit: 'back', hole1Angle: 0, hole2Angle: 180,
+  hole1Depth: 35, hole2Depth: 35, borderColor: 'none', borderWidth: 4,
+  removeBackground: true,
   diffuserThickness: 1.2, includeColors: true, colorCount: 4,
   smoothing: 0.4, limitedColors: [], preprocess: { ...DEFAULT_PREPROCESS },
   lipPlacement: 'none', lipWidth: 1.2, lipHeight: 0.6, lipClearance: 0.2,
   outline: DEFAULT_OUTLINE.map((p) => [...p]), artwork: [],
 };
-const limits: Record<Exclude<keyof LightboxSettings, 'wireExit' | 'removeBackground' | 'includeColors' | 'outline' | 'artwork' | 'limitedColors' | 'preprocess' | 'lipPlacement'>, [number, number]> = {
+const limits: Record<Exclude<keyof LightboxSettings, 'wireExit' | 'removeBackground' | 'includeColors' | 'outline' | 'artwork' | 'limitedColors' | 'preprocess' | 'lipPlacement' | 'borderColor'>, [number, number]> = {
   size: [45, 250], depth: [10, 60], wall: [1.2, 5], back: [1.2, 5],
   ledgeWidth: [3, 12], ledgeHeight: [0.8, 4], holeDiameter: [2, 10],
+  hole1Angle: [0, 359], hole2Angle: [0, 359],
+  hole1Depth: [0, 100], hole2Depth: [0, 100], borderWidth: [0.5, 12],
   diffuserThickness: [0.6, 3], colorCount: [1, 6], smoothing: [0,1],
   lipWidth: [0.6, 2.4], lipHeight: [0.4, 2.4], lipClearance: [0, 0.5],
 };
-const exits: WireExit[] = ['none', 'side', 'back', 'both'];
+const exits: WireExit[] = ['none', 'side', 'back', 'both', 'dual'];
+const borders: BorderColor[] = ['none', 'white', 'black'];
 const placements: LipPlacement[] = ['none', 'cover', 'box'];
 const validRing = (r: unknown): r is Ring =>
   Array.isArray(r) && r.length >= 3 && r.length <= 2500 &&
@@ -75,6 +90,11 @@ export function coerceSettings(raw: unknown): LightboxSettings {
     }
   }
   out.colorCount = Math.round(out.colorCount);
+  out.hole1Angle = Math.round(out.hole1Angle);
+  out.hole2Angle = Math.round(out.hole2Angle);
+  out.hole1Depth = Math.round(out.hole1Depth);
+  out.hole2Depth = Math.round(out.hole2Depth);
+  if (typeof v.borderColor === 'string' && borders.includes(v.borderColor as BorderColor)) out.borderColor = v.borderColor as BorderColor;
   if (typeof v.lipPlacement === 'string' && placements.includes(v.lipPlacement as LipPlacement)) out.lipPlacement = v.lipPlacement as LipPlacement;
   if (Array.isArray(v.limitedColors)) out.limitedColors = v.limitedColors.slice(0, 6).filter(
     (rgb: unknown) => Array.isArray(rgb) && rgb.length === 3 && rgb.every(

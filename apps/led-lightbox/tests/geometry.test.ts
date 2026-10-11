@@ -127,6 +127,69 @@ assert.equal(restored.artwork.length, 2);
 assert.equal(restored.diffuserThickness, 2.2);
 assert.equal(coerceSettings({ artwork: [{ color: [999,1,2], components: [] }] }).artwork.length, 0);
 
+// Border width must physically inset the colour geometry; a black border is a
+// separate non-overlapping printable face layer, not just a UI preview.
+const ordinary = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS), artwork });
+const whiteBorder = buildLightbox(wasm, {
+  ...coerceSettings(DEFAULT_SETTINGS), artwork, borderColor: 'white', borderWidth: 4,
+});
+const blackBorder = buildLightbox(wasm, {
+  ...coerceSettings(DEFAULT_SETTINGS), artwork, borderColor: 'black', borderWidth: 4,
+});
+assert.equal(whiteBorder.parts.length, 4, 'white border uses the existing diffuser filament');
+assert.equal(blackBorder.parts.length, 5, 'black border has its own filament part');
+assert.deepEqual(blackBorder.parts[4]!.color, [24, 24, 24]);
+assert.equal(blackBorder.parts[4]!.group, 'Diffuser cover');
+assert.ok(bounds(whiteBorder.parts[2]!.positions).min[0]! >
+  bounds(ordinary.parts[2]!.positions).min[0]! + 2,
+  'border width actually moves the image in from the outside edge');
+verifyMeshes(whiteBorder);
+verifyMeshes(blackBorder);
+for (const lipPlacement of ['none', 'cover', 'box'] as const) {
+  const borderBuild = buildLightbox(wasm, {
+    ...coerceSettings(DEFAULT_SETTINGS), artwork, borderColor: 'black', borderWidth: 3,
+    lipPlacement, diffuserThickness: 2,
+  });
+  assert.equal(borderBuild.parts.length, 5);
+  verifyMeshes(borderBuild);
+}
+const dualBase = { ...coerceSettings(DEFAULT_SETTINGS), wireExit: 'dual' as const };
+const bothAtSameSpot = buildLightbox(wasm, {
+  ...dualBase, hole1Angle: 0, hole2Angle: 0, hole1Depth: 0, hole2Depth: 0,
+});
+const twoSeparate = buildLightbox(wasm, {
+  ...dualBase, hole1Angle: 0, hole2Angle: 90, hole1Depth: 0, hole2Depth: 100,
+});
+const angled = buildLightbox(wasm, {
+  ...dualBase, hole1Angle: 45, hole2Angle: 220, hole1Depth: 20, hole2Depth: 80,
+});
+assert.equal(twoSeparate.parts.length, 2);
+assert.ok(meshVolume(twoSeparate.parts[0]!) < meshVolume(bothAtSameSpot.parts[0]!),
+  'independent angle/depth makes two exits instead of the same single cut');
+assert.ok(meshVolume(angled.parts[0]!) < meshVolume(flatCover.parts[0]!),
+  'angled exits remove shell material');
+verifyMeshes(twoSeparate);
+verifyMeshes(angled);
+assert.throws(() => buildLightbox(wasm, {
+  ...dualBase, depth: 10, back: 4, holeDiameter: 10,
+}), /depth|diameter/i);
+const settingsRoundTrip = coerceSettings({
+  ...DEFAULT_SETTINGS, wireExit: 'dual', borderColor: 'black', borderWidth: 5,
+  hole1Angle: 315, hole2Angle: 80, hole1Depth: 12, hole2Depth: 88,
+});
+assert.equal(settingsRoundTrip.wireExit, 'dual');
+assert.equal(settingsRoundTrip.borderColor, 'black');
+assert.equal(settingsRoundTrip.borderWidth, 5);
+assert.deepEqual(
+  [settingsRoundTrip.hole1Angle, settingsRoundTrip.hole2Angle, settingsRoundTrip.hole1Depth, settingsRoundTrip.hole2Depth],
+  [315, 80, 12, 88],
+);
+const bounded = coerceSettings({ wireExit: 'dual', borderColor: 'invalid',
+  hole1Angle: -5, hole2Angle: 1000, hole1Depth: -2, hole2Depth: 999, borderWidth: 300 });
+assert.equal(bounded.borderColor, 'none');
+assert.deepEqual([bounded.hole1Angle, bounded.hole2Angle, bounded.hole1Depth, bounded.hole2Depth, bounded.borderWidth],
+  [0, 359, 0, 100, 12]);
+
 // One known two-color alpha logo run through the ORIGINAL @vostok/trace pipeline.
 // Both the shell silhouette and the artwork regions must come from this single result.
 const W = 96, H = 72;
@@ -142,4 +205,4 @@ const traced = processImage({data: pixels, width:W, height:H}, 2,
   {removeBg:true, smoothing:0.4, preserveDetail:true, designMm:120});
 assert.ok(traced.outline.length > 0, 'tracer returns shell silhouette');
 assert.ok(traced.regions.length >= 2, 'tracer retains both image colors');
-console.log('LED lightbox: image tracing, colour diffuser, both registration-lip placements, groove clearance, thickness, printable orientation, all wire exits and project settings passed.');
+console.log('LED lightbox: image tracing, colour diffuser, both registration-lip placements, groove clearance, thickness, printable orientation, dual-positioned wire exits, black/white artwork borders and project settings passed.');

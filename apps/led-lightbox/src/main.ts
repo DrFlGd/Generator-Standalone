@@ -13,7 +13,7 @@ import { downloadThreeMF, downloadFile } from '@vostok/export';
 import { loadFileToImage, processImage, type RgbaImage, type Ring } from '@vostok/trace';
 import { signedArea } from '@vostok/shapes';
 import { openPrepareImage } from '@vostok/ui-kit/prepare-image';
-import { DEFAULT_SETTINGS, coerceSettings, type LightboxSettings, type WireExit, type LipPlacement, type ArtworkRegion } from './state';
+import { DEFAULT_SETTINGS, coerceSettings, type LightboxSettings, type WireExit, type BorderColor, type LipPlacement, type ArtworkRegion } from './state';
 import type { LightboxBuild } from './geometry';
 
 let settings: LightboxSettings = coerceSettings(DEFAULT_SETTINGS);
@@ -153,6 +153,9 @@ const sliders = {
   diffuserThickness: sliderRow({ label: 'Diffuser thickness', min: 0.6, max: 3, step: 0.2, unit: 'mm', value: settings.diffuserThickness,
     help: 'Overall thickness including the colour inlays. Box-lip mode requires at least the lip height plus 0.55 mm.',
     onInput: (v) => { settings.diffuserThickness = v; rebuild(); } }),
+  borderWidth: sliderRow({ label: 'Artwork border width', min: 0.5, max: 12, step: 0.5, unit: 'mm', value: settings.borderWidth,
+    help: 'Inset printed image colours from the diffuser edge. Black adds a separately printable border part.',
+    onInput: (v) => { settings.borderWidth = v; rebuild(); } }),
   lipWidth: sliderRow({ label: 'Registration lip width', min: 0.6, max: 2.4, step: 0.2, unit: 'mm', value: settings.lipWidth,
     help: 'Radial thickness of the male tongue/ridge. Keep small for intricate silhouettes.',
     onInput: (v) => { settings.lipWidth = v; rebuild(); } }),
@@ -164,11 +167,29 @@ const sliders = {
     onInput: (v) => { settings.lipClearance = v; rebuild(); } }),
   holeDiameter: sliderRow({ label: 'Cable hole diameter', min: 2, max: 10, step: 0.5, unit: 'mm', value: settings.holeDiameter,
     onInput: (v) => { settings.holeDiameter = v; rebuild(); } }),
+  hole1Angle: sliderRow({ label: 'Hole 1 angle', min: 0, max: 359, step: 1, unit: '°', value: settings.hole1Angle,
+    help: 'From the front: 0° right, 90° top, 180° left, 270° bottom.',
+    onInput: (v) => { settings.hole1Angle = v; rebuild(); } }),
+  hole1Depth: sliderRow({ label: 'Hole 1 from back', min: 0, max: 100, step: 1, unit: '%', value: settings.hole1Depth,
+    help: '0% near the rear panel, 100% near the front opening; maintains clearance as box depth changes.',
+    onInput: (v) => { settings.hole1Depth = v; rebuild(); } }),
+  hole2Angle: sliderRow({ label: 'Hole 2 angle', min: 0, max: 359, step: 1, unit: '°', value: settings.hole2Angle,
+    help: 'Second hole independently located around the silhouette.',
+    onInput: (v) => { settings.hole2Angle = v; rebuild(); } }),
+  hole2Depth: sliderRow({ label: 'Hole 2 from back', min: 0, max: 100, step: 1, unit: '%', value: settings.hole2Depth,
+    help: 'Second hole independently located between rear and front.',
+    onInput: (v) => { settings.hole2Depth = v; rebuild(); } }),
 };
 const wire = selectField<WireExit>({ label: 'Wire exit', value: settings.wireExit, options: [
   { value: 'none', label: 'No holes' }, { value: 'back', label: 'Back' },
   { value: 'side', label: 'Right side' }, { value: 'both', label: 'Back + right side' },
+  { value: 'dual', label: 'Two positioned side holes' },
 ], onChange: (v) => { settings.wireExit = v; rebuild(); } });
+const borderMode = selectField<BorderColor>({ label: 'Artwork border', value: settings.borderColor, options: [
+  { value: 'none', label: 'None (original narrow white edge)' },
+  { value: 'white', label: 'White / translucent border' },
+  { value: 'black', label: 'Black border (separate filament)' },
+], onChange: (v) => { settings.borderColor = v; rebuild(); } });
 const lipMode = selectField<LipPlacement>({ label: 'Registration lip', value: settings.lipPlacement, options: [
   { value: 'none', label: 'None · glue-on cover' },
   { value: 'cover', label: 'On diffuser underside · press into box' },
@@ -182,6 +203,7 @@ const includeColors = toggleSwitch({
 function syncUI() {
   syncControls(settings, sliders);
   wire.setValue(settings.wireExit);
+  borderMode.setValue(settings.borderColor);
   lipMode.setValue(settings.lipPlacement);
   includeColors.setValue(settings.includeColors);
 }
@@ -260,7 +282,7 @@ const footer = sidebarFooter({
   }, PROJECT_FILE),
   onHelp: () => dialog({
     title: 'Image LED Lightbox help',
-    content: 'Upload artwork to open the Clicker-style Prepare Image dialog. Choose kept filament colours, background removal, smoothing and tone, then confirm the preview. The model includes a separate translucent diffuser with colour inlays. No lip: glue the cover. Lip on cover: a male tongue enters the hollow box. Lip on box: a male ridge engages a recess in the diffuser. Clearance is radial per side; 0.15–0.2 mm is a starting range, not a guaranteed fit. Box-lip mode requires diffuser thickness at least lip height + 0.55 mm. Print a small tolerance sample before committing a full model. The print-layout preview shows shell and cover side by side.',
+    content: 'Choose a white or black border to inset the artwork. Black is a separate filament part. Two radial side holes can be independently angled and positioned from back (0%) to front (100%). Upload artwork to open the Clicker-style Prepare Image dialog. Choose kept filament colours, background removal, smoothing and tone, then confirm the preview. The model includes a separate translucent diffuser with colour inlays. No lip: glue the cover. Lip on cover: a male tongue enters the hollow box. Lip on box: a male ridge engages a recess in the diffuser. Clearance is radial per side; 0.15–0.2 mm is a starting range, not a guaranteed fit. Box-lip mode requires diffuser thickness at least lip height + 0.55 mm. Print a small tolerance sample before committing a full model. The print-layout preview shows shell and cover side by side.',
     actions: [{ label: 'Got it', primary: true }],
   }),
   themeStorageKey: 'led-lightbox-theme',
@@ -283,11 +305,14 @@ const shell = appShell({
         sliders.ledgeWidth, sliders.ledgeHeight,
       ] }),
       collapsibleSection({ title: '3 · Diffuser cover & registration', body: [
-        sliders.diffuserThickness, lipMode, sliders.lipWidth, sliders.lipHeight, sliders.lipClearance,
+        sliders.diffuserThickness, borderMode, sliders.borderWidth,
+        lipMode, sliders.lipWidth, sliders.lipHeight, sliders.lipClearance,
         el('p', { className: 'vl-hint',
           text: 'For a clean fit, choose which part carries the male lip. The cover is printed artwork face-down when using a lip; both pieces still export separately. Press fit depends on filament shrinkage and printer calibration.' }),
       ] }),
-      collapsibleSection({ title: '4 · Wiring', body: [wire, sliders.holeDiameter, reset] }),
+      collapsibleSection({ title: '4 · Wiring', body: [wire, sliders.holeDiameter,
+        el('p', { className: 'vl-hint', text: 'In Two positioned side holes mode, set each angle around the box and independently place it between the back panel and front.' }),
+        sliders.hole1Angle, sliders.hole1Depth, sliders.hole2Angle, sliders.hole2Depth, reset] }),
     ],
     credit: panelCredit({ title: 'Image LED Lightbox' }),
   },

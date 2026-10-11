@@ -17,6 +17,24 @@ const FACE_LAYER = 0.4;
 const PLATE_GAP = 12;
 const WHITE: RGB = [244, 246, 237];
 const SHELL: RGB = [66, 84, 110];
+const BLACK: RGB = [24, 24, 24];
+
+/** First intersection of a ray from an interior point with the silhouette boundary. */
+function rayDistance(outline: Ring, origin: [number, number], direction: [number, number]): number {
+  let nearest = Infinity;
+  for (let i = 0; i < outline.length; i++) {
+    const a = outline[i]!;
+    const b = outline[(i + 1) % outline.length]!;
+    const ex = b[0] - a[0], ey = b[1] - a[1];
+    const cross = direction[0] * ey - direction[1] * ex;
+    if (Math.abs(cross) < 1e-9) continue;
+    const ox = a[0] - origin[0], oy = a[1] - origin[1];
+    const t = (ox * ey - oy * ex) / cross;
+    const u = (ox * direction[1] - oy * direction[0]) / cross;
+    if (t > 1e-5 && u >= -1e-7 && u <= 1 + 1e-7) nearest = Math.min(nearest, t);
+  }
+  return nearest;
+}
 function projected(points: Ring, cx: number, cy: number, scale: number): Ring {
   return points.map(([x, y]) => [(x - cx) * scale, (y - cy) * scale]);
 }
@@ -27,7 +45,8 @@ function makePart(solid: any, name: string, color: RGB, group: string): ExportPa
 }
 export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBuild {
   const { outline, size, depth, wall, back, ledgeWidth, ledgeHeight, wireExit, holeDiameter,
-    diffuserThickness, includeColors, artwork, lipPlacement, lipWidth, lipHeight, lipClearance } = settings;
+    diffuserThickness, includeColors, artwork, lipPlacement, lipWidth, lipHeight, lipClearance,
+    borderColor, borderWidth, hole1Angle, hole2Angle, hole1Depth, hole2Depth } = settings;
   if (outline.length < 3) throw new Error('Load an image with a solid outer silhouette.');
   const maxX = Math.max(...outline.map((p) => p[0]));
   const minX = Math.min(...outline.map((p) => p[0]));
@@ -89,6 +108,31 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
       shell = keep(shell.subtract(cutter));
       if (width > 3 * height) warnings.push('Inspect the side exit on long or irregular silhouettes.');
     }
+    if (wireExit === 'dual') {
+      // Each hole travels from the hollow interior radially through the FIRST
+      // outline wall it meets. Unlike a full-width bore this cannot accidentally
+      // drill the far side of a concave or narrow silhouette.
+      const freeHeight = depth - back - holeDiameter - 1.2;
+      if (freeHeight < 0) throw new Error('Increase box depth or reduce cable hole diameter for two side exits.');
+      for (const [angle, fromBack] of [[hole1Angle, hole1Depth], [hole2Angle, hole2Depth]]) {
+        const radians = angle * Math.PI / 180;
+        const direction: [number, number] = [Math.cos(radians), Math.sin(radians)];
+        const hit = rayDistance(points, spot.at, direction);
+        if (!Number.isFinite(hit) || hit < wall + 0.2) {
+          throw new Error('Could not place a wire exit at this angle. Try a different angle or a larger silhouette.');
+        }
+        const start = Math.max(0, hit - wall - ledgeWidth - holeDiameter / 2 - 1);
+        const reach = hit + holeDiameter / 2 + 2 - start;
+        const z = back + holeDiameter / 2 + 0.6 + freeHeight * fromBack / 100;
+        const drill = keep(keep(wasm.Manifold.cylinder(reach, holeDiameter / 2, holeDiameter / 2, 40))
+          .rotate([0, 90, 0]).rotate([0, 0, angle])
+          .translate([spot.at[0] + direction[0] * start, spot.at[1] + direction[1] * start, z]));
+        shell = keep(shell.subtract(drill));
+      }
+      if (width > 3 * height || height > 3 * width) {
+        warnings.push('Inspect radial side exits on highly elongated silhouettes.');
+      }
+    }
     // In box-lip mode, an integral male ridge stands above the outer wall's rim.
     // Its mating female groove is carved into the underside of the diffuser.
     const boxRidgeOuter = lipPlacement === 'box'
@@ -119,9 +163,24 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
     const overlayParts: ExportPart[] = [];
     let whiteCover = backing;
     if (hasArtwork) {
-      // A narrow pale border is deliberately left on the face: protects the outer
-      // sidewalls from fragile coloured islands and avoids precision seams at the rim.
-      const imageArea = keep(outer.offset(-0.2, 'Round', 2, 16));
+      // Insetting the artwork leaves a configurable solid face band. A black band
+      // becomes its own 0.4 mm filament object, never overlapping the white face.
+      const inset = borderColor === 'none' ? 0.2 : borderWidth;
+      // Shrink the entire traced image, rather than merely cropping away its
+      // edge pixels. Uniform scaling preserves the image's original proportions.
+      // Clip to the offset profile only where an irregular concave boundary needs it.
+      if (inset * 2 >= Math.min(width, height)) {
+        throw new Error('Image border is too wide for this silhouette. Reduce border width.');
+      }
+      const imageScale = borderColor === 'none' ? 1 : Math.min(
+        (width - inset * 2) / width, (height - inset * 2) / height,
+      );
+      const insetArea = keep(outer.offset(-inset, 'Round', 2, 16));
+      const imageArea = borderColor === 'none' ? insetArea : keep(insetArea.intersect(
+        keep(csOf(wasm, [points.map(([x, y]) => [x * imageScale, y * imageScale] as [number, number])], 'EvenOdd')),
+      ));
+      if (imageArea.isEmpty()) throw new Error('Image border is too wide for this silhouette. Reduce border width.');
+      const blackBand = borderColor === 'black' ? keep(outer.subtract(imageArea)) : null;
       let combined: any = null;
       const prepared: { cross: any; name: string; color: RGB }[] = [];
       for (let i = 0; i < artwork.length; i++) {
@@ -131,9 +190,9 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         for (const component of region.components) {
           if (++pieceCount > 120) break;
           if (!component.length) continue;
-          const first = projected(component[0]!, cx, cy, scale);
+          const first = projected(component[0]!, cx, cy, scale * imageScale);
           if (Math.abs(signedArea(first)) < 0.25) continue;
-          for (const ring of component) transformed.push(projected(ring, cx, cy, scale));
+          for (const ring of component) transformed.push(projected(ring, cx, cy, scale * imageScale));
         }
         if (!transformed.length) continue;
         const raw = keep(csOf(wasm, transformed, 'EvenOdd'));
@@ -143,7 +202,7 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         prepared.push({ cross: clipped, name: 'Artwork colour ' + (i + 1), color: region.color });
       }
       if (prepared.length && combined) {
-        const whiteTop = keep(outer.subtract(combined));
+        const whiteTop = keep(blackBand ? keep(outer.subtract(combined)).subtract(blackBand) : outer.subtract(combined));
         if (!whiteTop.isEmpty()) {
           const upper = keep(keep(extrude(wasm, whiteTop, FACE_LAYER))
             .translate([0, 0, faceBottom]));
@@ -155,6 +214,12 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
           const translated = keep(layer.translate([move[0], move[1], 0]));
           const part = makePart(translated, region.name, region.color, 'Diffuser cover');
           if (part) overlayParts.push(part);
+        }
+        if (blackBand && !blackBand.isEmpty()) {
+          const face = keep(keep(extrude(wasm, blackBand, FACE_LAYER))
+            .translate([0, 0, faceBottom]).translate([move[0], move[1], 0]));
+          const borderPart = makePart(face, 'Black artwork border', BLACK, 'Diffuser cover');
+          if (borderPart) overlayParts.push(borderPart);
         }
       } else {
         warnings.push('The image had no printable colour regions; generated a plain white diffuser.');
