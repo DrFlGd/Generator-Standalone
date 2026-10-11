@@ -65,3 +65,25 @@ All three share adjustable lip width, lip height and **clearance per side**.
 on printer accuracy, shrinkage, perimeter count and filament. Colour parts
 are printed face-down for both lipped modes. At close fits, print a small
 fit test before printing a full-size design.
+
+
+### Optional picture borders and positioned cable exits
+Choose **None**, **White / translucent**, or **Black** artwork border. The
+border-width control (0.5–12 mm) insets the posterized colour regions while
+preserving the outside silhouette and separate diffuser geometry. White is part
+of the translucent diffuser; black adds a separately printable 0.4 mm colour
+face to the 3MF (assign black filament). If no traced colour artwork is included,
+there is no picture to border.
+
+The existing rear and right-side wire exits still behave as before. Select
+**Two positioned side holes** for two independent radial exit bores. Each has
+an angle of 0–359° viewed from the front (0° right, 90° top, 180° left,
+270° bottom) and a back-to-front position of 0–100%. The position is measured
+within the usable box wall height with clearance for the hole radius: 0% is
+near the inside of the back plate, 100% is near the open front. The radial cut
+only crosses the first shell wall in its direction, rather than drilling clear
+through the opposite side. The holes share the cable diameter control.
+
+Saved projects retain border/hole controls. Older projects load with border
+disabled and their existing wiring mode unchanged. Complex silhouettes, narrow
+necks and tight hole spacing may need a test print before wiring.
