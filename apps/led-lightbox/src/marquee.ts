@@ -67,7 +67,7 @@ export function sampleMarqueeHoles(
   const totalLength = loops.reduce((n, loop) => n + loop.length, 0);
   const quotas = loops.map((loop) => (count - loops.length) * loop.length / totalLength);
   const counts = quotas.map((q) => 1 + Math.floor(q));
-  let left = count - counts.reduce((n, c) => n + c, 0);
+  const left = count - counts.reduce((n, c) => n + c, 0);
   const order = quotas.map((q, i) => ({ i, rest: q - Math.floor(q) }))
     .sort((a, b) => b.rest - a.rest);
   for (let i = 0; i < left; i++) counts[order[i]!.i]!++;
