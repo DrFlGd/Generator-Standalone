@@ -338,3 +338,4 @@ export {
   SYMBOL_FIRST, SYMBOL_LAST, isSymbolChar, hasSymbol, codePointCount, nextSymbolChar, placeSymbol, shiftSymbol,
   type SymbolPlacement, type SymbolTransform,
 } from './symbols/rules';
+

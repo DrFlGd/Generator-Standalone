@@ -8,7 +8,8 @@
     "./build-loop": "./src/build-loop.ts",
     "./symbols": "./src/components/symbol-chooser.ts",
     "./symbol-rules": "./src/symbols/rules.ts",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./prepare-image": "./src/components/prepare-image.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
@@ -16,7 +17,8 @@
   },
   "dependencies": {
     "@vostok/brand": "workspace:*",
-    "@vostok/symbols": "workspace:*"
+    "@vostok/symbols": "workspace:*",
+    "@vostok/trace": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

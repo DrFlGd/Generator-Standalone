@@ -1,0 +1,83 @@
+/* Shared Prepare Image modal; same dialog used by Clicker and LED Lightbox. */
+.wz-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.72);
+  display: flex; align-items: center; justify-content: center; }
+.wz-modal { background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+  width: min(1100px, 94vw); max-height: 92vh; display: flex; flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5); overflow: hidden; }
+.wz-modal.lg { width: min(1175px, 95vw); }
+.wz-head { font-size: 20px; font-weight: 600; padding: 20px 25px; border-bottom: 1px solid var(--line); }
+.wz-body { padding: 22px 25px; overflow: auto; }
+.wz-body.center { display: flex; justify-content: center; }
+.wz-body.col { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.wz-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+  padding: 18px 25px; border-top: 1px solid var(--line); }
+.wz-error { margin-right: auto; color: #ff6b6b; font-size: 14px; font-weight: 600; }
+.wz-error[hidden] { display: none; }
+
+.wz-body { display: grid; }
+/*
+  Sizing arithmetic for the 1366x768 laptop target (checked against invariant #10's "verify
+  in the browser", but written down here since the constraint is a CSS one):
+    modal max-height        92vh of 768   = 706px
+    wz-head (20px pad x2 + ~24px line)    = ~64px
+    wz-foot (18px pad x2 + ~40px button)  = ~76px
+    wz-body padding (22px top+bottom)     = ~44px
+    left column: preview-bar ~40 + gap 14 + palette ~30 + gap 14 + hint ~34 + 2 gaps 28 = ~160px
+                                             leaves ~362px for the canvas — a real hero, not
+                                             a postage stamp, and it only grows at 1920x1080.
+  None of this is hardcoded on the canvas itself: it is `flex: 1; min-height: 0` inside a
+  column that is itself a grid cell with a bounded height (`.wz-body` gets `flex:1;min-height:0`
+  from its flex-column modal parent), so the canvas simply takes whatever is left over at any
+  viewport rather than being sized in JS or pinned to a vh number the way the old `max-height:
+  56vh` was. The controls column scrolls internally instead of pushing the modal taller.
+*/
+.wz-modal.lg .wz-body { grid-template-columns: 1fr 360px; gap: 24px; overflow: hidden; flex: 1; min-height: 0; }
+.wz-left { display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 0; }
+.wz-controls { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; padding-right: 4px; }
+/* `section()`/`collapsibleSection()` get their flex rhythm from `.vl-app .vl-section` in the
+   kit — this modal is appended to `document.body`, outside `.vl-app`, so that scoped rule
+   never matches. Restate the one part that actually changes (flex + gap) here rather than
+   let a plain `.vl-section` fall back to unstyled block spacing. */
+.wz-controls .vl-section { display: flex; flex-direction: column; gap: 14px; }
+.wz-controls .vl-section > .vl-label { margin: 0 0 2px; }
+
+.wz-canvas {
+  flex: 1; min-height: 220px; display: flex; align-items: center; justify-content: center;
+  border-radius: 12px; overflow: hidden; cursor: grab; touch-action: none;
+}
+.wz-canvas.is-panning { cursor: grabbing; }
+.wz-canvas.big { min-height: 450px; width: 100%; }
+/* The result view keeps the last trace on screen, dimmed, while a fresh one is computed —
+   a blank frame between two slider ticks reads as "it broke". */
+.wz-canvas.is-stale canvas { opacity: 0.45; transition: opacity var(--dur-hover) var(--ease-standard); }
+.wz-preview-bar { display: flex; align-items: center; gap: 14px; }
+.wz-preview-bar > :first-child { flex: 0 0 240px; }
+.wz-zoom-controls { display: flex; align-items: center; gap: 6px; }
+.wz-stats { color: var(--muted); font-size: 14px; margin-left: auto; }
+.wz-stats.is-busy { color: var(--text); }
+/* No `max-height` here on purpose — the canvas fills whatever `.wz-canvas` gives it (see the
+   sizing comment above), and the zoom/pan transform is applied to this same element in JS. */
+.wz-canvas canvas { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* Read-only palette: what the trace found, not a control — filaments are picked in the
+   sidebar afterwards. */
+.wz-palette { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-height: 18px; }
+.wz-swatch { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.wz-swatch-dot { width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--line); flex: 0 0 auto; }
+/* The keep-list: one kit switch row per colour found, with the swatch in front of the label. */
+.wz-colours { display: flex; flex-direction: column; gap: 6px; }
+.wz-colours-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.wz-colour-count { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.wz-colour-list { display: flex; flex-direction: column; gap: 2px; }
+.wz-colour-row { gap: 10px; }
+.wz-colour-row .vl-switch-label { flex: 1 1 auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wz-colour-dot { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); flex: 0 0 auto; }
+.checker { background-image:
+  linear-gradient(45deg, var(--panel-2) 25%, transparent 25%),
+  linear-gradient(-45deg, var(--panel-2) 25%, transparent 25%),
+  linear-gradient(45deg, transparent 75%, var(--panel-2) 75%),
+  linear-gradient(-45deg, transparent 75%, var(--panel-2) 75%);
+  background-size: 22px 22px; background-position: 0 0, 0 11px, 11px -11px, -11px 0px;
+  background-color: var(--panel); }
+
+@media (max-width: 800px) { .wz-modal.lg .wz-body { grid-template-columns: 1fr; overflow: auto; } .wz-controls { max-height: 38vh; } .wz-preview-bar { flex-wrap: wrap; } }

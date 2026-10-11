@@ -12,11 +12,13 @@ import { plateSize, mountPlatePicker, loadPlateChoice } from '@vostok/plates';
 import { downloadThreeMF, downloadFile } from '@vostok/export';
 import { loadFileToImage, processImage, type RgbaImage, type Ring } from '@vostok/trace';
 import { signedArea } from '@vostok/shapes';
-import { DEFAULT_SETTINGS, coerceSettings, type LightboxSettings, type WireExit, type ArtworkRegion } from './state';
+import { openPrepareImage } from '@vostok/ui-kit/prepare-image';
+import { DEFAULT_SETTINGS, coerceSettings, type LightboxSettings, type WireExit, type LipPlacement, type ArtworkRegion } from './state';
 import type { LightboxBuild } from './geometry';
 
 let settings: LightboxSettings = coerceSettings(DEFAULT_SETTINGS);
 let sourceImage: RgbaImage | null = null;
+let preparedImage: RgbaImage | null = null;
 let imageUrl: string | null = null;
 let uploadedName = 'starter shape';
 const client = workerClient<{ settings: LightboxSettings }, LightboxBuild>(
@@ -62,15 +64,16 @@ function keepLargest(rings: Ring[]): Ring {
 }
 /** Use the SAME @vostok/trace call for the outline and all interior colour regions. */
 function retrace(): void {
-  if (!sourceImage) return;
+  if (!preparedImage) return;
   const result = processImage({
-    width: sourceImage.width, height: sourceImage.height,
-    data: new Uint8ClampedArray(sourceImage.data),
+    width: preparedImage.width, height: preparedImage.height,
+    data: new Uint8ClampedArray(preparedImage.data),
   }, settings.colorCount, {
     removeBg: settings.removeBackground,
-    smoothing: 0.4,
+    smoothing: settings.smoothing,
     preserveDetail: true,
     designMm: settings.size,
+    customColors: settings.limitedColors.length ? settings.limitedColors : undefined,
   });
   // Commit the outline and the entire palette together: they share exact coordinates.
   const outline = keepLargest(result.outline);
@@ -86,23 +89,52 @@ function retrace(): void {
   settings.artwork = artwork;
   rebuild(true);
 }
+function prepareImage(base: RgbaImage, file?: File) {
+  const reopening = base === sourceImage;
+  openPrepareImage({
+    baseImage: base,
+    maxColors: 6,
+    initialColorCount: settings.colorCount,
+    initialSmoothing: settings.smoothing,
+    initialRemoveBg: settings.removeBackground,
+    initialPreprocess: reopening ? settings.preprocess : undefined,
+    initialLimitedColors: reopening && settings.limitedColors.length ? settings.limitedColors : undefined,
+    designMm: settings.size,
+    onComplete: ({ adjusted, preprocess, colorCount, smoothing, limitedColors }) => {
+      // Keep the exact adjusted image, background setting and selected palette
+      // displayed by the modal, so the 3MF geometry matches its "Result" view.
+      sourceImage = base;
+      preparedImage = adjusted;
+      settings.preprocess = preprocess;
+      settings.removeBackground = !preprocess.keepBackground;
+      settings.smoothing = smoothing;
+      settings.colorCount = colorCount;
+      settings.limitedColors = limitedColors ?? [];
+      if (file) {
+        uploadedName = file.name;
+        if (imageUrl) URL.revokeObjectURL(imageUrl);
+        imageUrl = URL.createObjectURL(file);
+        preview.src = imageUrl;
+        previewWrap.classList.remove('hidden');
+      }
+      try { retrace(); } catch (error) {
+        status.set(error instanceof Error ? error.message : String(error), 'error');
+      }
+    },
+  });
+}
 async function importFile(file: File) {
   try {
     if (!/^image\/(png|jpeg|webp)$/.test(file.type) && !/\.(png|jpe?g|webp)$/i.test(file.name)) {
       throw new Error('Please choose a PNG, JPG or WebP image.');
     }
     const decoded = await loadFileToImage(file, 700);
-    sourceImage = decoded;
-    retrace();
-    uploadedName = file.name;
-    if (imageUrl) URL.revokeObjectURL(imageUrl);
-    imageUrl = URL.createObjectURL(file);
-    preview.src = imageUrl;
-    previewWrap.classList.remove('hidden');
+    prepareImage(decoded, file);
   } catch (error) {
     status.set(error instanceof Error ? error.message : String(error), 'error');
   }
 }
+
 const sliders = {
   size: sliderRow({ label: 'Longest side', min: 45, max: 250, step: 5, unit: 'mm', value: settings.size,
     onInput: (v) => { settings.size = v; rebuild(true); } }),
@@ -119,18 +151,17 @@ const sliders = {
     help: 'Height of the internal LED shelf above the back panel.',
     onInput: (v) => { settings.ledgeHeight = v; rebuild(); } }),
   diffuserThickness: sliderRow({ label: 'Diffuser thickness', min: 0.6, max: 3, step: 0.2, unit: 'mm', value: settings.diffuserThickness,
-    help: 'Overall thickness of the glue-on diffuser, including the 0.4 mm colour inlay layer. Use white/translucent filament for backlighting.',
+    help: 'Overall thickness including the colour inlays. Box-lip mode requires at least the lip height plus 0.55 mm.',
     onInput: (v) => { settings.diffuserThickness = v; rebuild(); } }),
-  colorCount: sliderRow({ label: 'Image colour count', min: 1, max: 6, step: 1, value: settings.colorCount,
-    help: 'Posterize the original image into this many filament colours using the built-in image preparation pipeline.',
-    onInput: (v) => {
-      settings.colorCount = v;
-      if (sourceImage) {
-        try { retrace(); } catch (e) { status.set(e instanceof Error ? e.message : String(e), 'error'); }
-      } else {
-        status.set('To change saved artwork colour separation, re-upload the original image.');
-      }
-    } }),
+  lipWidth: sliderRow({ label: 'Registration lip width', min: 0.6, max: 2.4, step: 0.2, unit: 'mm', value: settings.lipWidth,
+    help: 'Radial thickness of the male tongue/ridge. Keep small for intricate silhouettes.',
+    onInput: (v) => { settings.lipWidth = v; rebuild(); } }),
+  lipHeight: sliderRow({ label: 'Registration lip height', min: 0.4, max: 2.4, step: 0.2, unit: 'mm', value: settings.lipHeight,
+    help: 'How far the lip extends into its socket. Box-lip height must be less than diffuser thickness minus 0.55 mm.',
+    onInput: (v) => { settings.lipHeight = v; rebuild(); } }),
+  lipClearance: sliderRow({ label: 'Fit tolerance (per side)', min: 0, max: 0.5, step: 0.05, unit: 'mm', value: settings.lipClearance,
+    help: 'Radial gap on each mating wall. Start with 0.15–0.2 mm; lower for tighter press fit, higher for easy removal.',
+    onInput: (v) => { settings.lipClearance = v; rebuild(); } }),
   holeDiameter: sliderRow({ label: 'Cable hole diameter', min: 2, max: 10, step: 0.5, unit: 'mm', value: settings.holeDiameter,
     onInput: (v) => { settings.holeDiameter = v; rebuild(); } }),
 };
@@ -138,14 +169,11 @@ const wire = selectField<WireExit>({ label: 'Wire exit', value: settings.wireExi
   { value: 'none', label: 'No holes' }, { value: 'back', label: 'Back' },
   { value: 'side', label: 'Right side' }, { value: 'both', label: 'Back + right side' },
 ], onChange: (v) => { settings.wireExit = v; rebuild(); } });
-const removeBg = toggleSwitch({
-  label: 'Remove flat background', checked: settings.removeBackground,
-  help: 'Uses the built-in image preparation system, including background matting, quantization and outline tracing.',
-  onChange: (v) => {
-    settings.removeBackground = v;
-    try { retrace(); } catch (e) { status.set(e instanceof Error ? e.message : String(e), 'error'); }
-  },
-});
+const lipMode = selectField<LipPlacement>({ label: 'Registration lip', value: settings.lipPlacement, options: [
+  { value: 'none', label: 'None · glue-on cover' },
+  { value: 'cover', label: 'On diffuser underside · press into box' },
+  { value: 'box', label: 'On box rim · fit into diffuser groove' },
+], onChange: (v) => { settings.lipPlacement = v; rebuild(); } });
 const includeColors = toggleSwitch({
   label: 'Preserve image colours', checked: settings.includeColors,
   help: 'Produce separate 0.4 mm inlaid 3MF parts for the traced colours, with a white/translucent diffuser beneath.',
@@ -154,14 +182,14 @@ const includeColors = toggleSwitch({
 function syncUI() {
   syncControls(settings, sliders);
   wire.setValue(settings.wireExit);
-  removeBg.setValue(settings.removeBackground);
+  lipMode.setValue(settings.lipPlacement);
   includeColors.setValue(settings.includeColors);
 }
 const reset = button({
   label: 'Reset dimensions', emphasis: 'secondary', icon: ICONS.rotateLeft, block: true,
   onClick: () => {
-    const { outline, artwork } = settings;
-    settings = coerceSettings({ ...DEFAULT_SETTINGS, outline, artwork });
+    const { outline, artwork, preprocess, limitedColors, colorCount, smoothing, removeBackground, includeColors } = settings;
+    settings = coerceSettings({ ...DEFAULT_SETTINGS, outline, artwork, preprocess, limitedColors, colorCount, smoothing, removeBackground, includeColors });
     syncUI();
     if (sourceImage) {
       try { retrace(); } catch (e) { status.set(e instanceof Error ? e.message : String(e), 'error'); }
@@ -175,13 +203,15 @@ const drop = dropZone({
   onFiles: ([file]) => { if (file) void importFile(file); },
 });
 const note = el('p', { className: 'vl-hint',
-  text: 'The largest outer silhouette becomes the box and glue-on cover. The built-in tracer keeps up to six simplified image colours as separate 3MF face parts. Very small colour islands are omitted. The cover is laid next to the shell for printing, not shown installed.' });
+  text: 'Uploading opens the same Prepare Image dialog used by Clicker: choose colours to keep, remove background, adjust smoothing and picture tone, and inspect the actual traced Result. After confirmation, the matching print parts appear in 3D.' });
 const starter = button({
   label: 'Use starter rectangle', emphasis: 'secondary', block: true,
   onClick: () => {
     settings.outline = coerceSettings(DEFAULT_SETTINGS).outline;
     settings.artwork = [];
+    settings.limitedColors = [];
     sourceImage = null;
+    preparedImage = null;
     uploadedName = 'starter shape';
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     imageUrl = null;
@@ -189,8 +219,14 @@ const starter = button({
     rebuild(true);
   },
 });
+const adjust = button({ label: 'Prepare / adjust image', emphasis: 'secondary', block: true,
+  onClick: () => {
+    if (sourceImage) prepareImage(sourceImage);
+    else status.set('Upload an image to open Prepare Image.');
+  },
+});
 const uploadSection = section({ title: 'Image artwork', body: [
-  drop, previewWrap, note, removeBg, includeColors, sliders.colorCount, starter,
+  drop, previewWrap, adjust, note, includeColors, starter,
 ] });
 const PROJECT_FILE: ProjectShape = {
   app: 'led-lightbox', keys: ['size', 'depth', 'outline'] satisfies (keyof LightboxSettings)[],
@@ -213,6 +249,7 @@ const footer = sidebarFooter({
   onLoad: (file?: File) => file && readProjectFile(file, (data) => {
     settings = coerceSettings(data);
     sourceImage = null;
+    preparedImage = null;
     uploadedName = 'saved artwork';
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     imageUrl = null;
@@ -223,7 +260,7 @@ const footer = sidebarFooter({
   }, PROJECT_FILE),
   onHelp: () => dialog({
     title: 'Image LED Lightbox help',
-    content: 'Import a PNG/JPG/WebP. The outer silhouette makes a hollow shell; the built-in image preparation pipeline separates the interior image into simplified printable colours. Export creates a glue-on white/translucent diffuser with 0.4 mm colour inlays and a separate shell. Diffuser thickness includes the colour layer. Both lie on the print bed in the 3MF. After printing, glue the cover to the top rim. Use translucent filament and test LED temperature, light transmission, fit, and wire clearances before installing.',
+    content: 'Upload artwork to open the Clicker-style Prepare Image dialog. Choose kept filament colours, background removal, smoothing and tone, then confirm the preview. The model includes a separate translucent diffuser with colour inlays. No lip: glue the cover. Lip on cover: a male tongue enters the hollow box. Lip on box: a male ridge engages a recess in the diffuser. Clearance is radial per side; 0.15–0.2 mm is a starting range, not a guaranteed fit. Box-lip mode requires diffuser thickness at least lip height + 0.55 mm. Print a small tolerance sample before committing a full model. The print-layout preview shows shell and cover side by side.',
     actions: [{ label: 'Got it', primary: true }],
   }),
   themeStorageKey: 'led-lightbox-theme',
@@ -245,10 +282,10 @@ const shell = appShell({
       collapsibleSection({ title: '2 · LED mounting shelf', body: [
         sliders.ledgeWidth, sliders.ledgeHeight,
       ] }),
-      collapsibleSection({ title: '3 · Diffuser cover', body: [
-        sliders.diffuserThickness,
+      collapsibleSection({ title: '3 · Diffuser cover & registration', body: [
+        sliders.diffuserThickness, lipMode, sliders.lipWidth, sliders.lipHeight, sliders.lipClearance,
         el('p', { className: 'vl-hint',
-          text: 'Separate glue-on diffuser with a 0.4 mm multicolour face. The full cover thickness is adjustable. Print in translucent white and use compatible colour filaments.' }),
+          text: 'For a clean fit, choose which part carries the male lip. The cover is printed artwork face-down when using a lip; both pieces still export separately. Press fit depends on filament shrinkage and printer calibration.' }),
       ] }),
       collapsibleSection({ title: '4 · Wiring', body: [wire, sliders.holeDiameter, reset] }),
     ],
