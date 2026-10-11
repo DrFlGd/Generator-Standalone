@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS: LightboxSettings = {
   ledgeWidth: 8, ledgeHeight: 2, holeDiameter: 5,
   wireExit: 'back', hole1Angle: 0, hole2Angle: 180,
   hole1Depth: 35, hole2Depth: 35, borderColor: 'none', borderWidth: 4,
-  marqueeLayout: 'none', marqueeCount: 32, marqueeDiameter: 2.5, marqueeInset: 2,
+  marqueeLayout: 'none', marqueeCount: 32, marqueeDiameter: 2.5, marqueeInset: 5,
   removeBackground: true,
   diffuserThickness: 1.2, includeColors: true, colorCount: 4,
   smoothing: 0.4, limitedColors: [], preprocess: { ...DEFAULT_PREPROCESS },
