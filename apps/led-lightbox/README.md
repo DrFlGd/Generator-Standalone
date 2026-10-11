@@ -87,3 +87,36 @@ through the opposite side. The holes share the cable diameter control.
 Saved projects retain border/hole controls. Older projects load with border
 disabled and their existing wiring mode unchanged. Complex silhouettes, narrow
 necks and tight hole spacing may need a test print before wiring.
+
+### Perforated marquee-light diffuser
+
+Select a **Marquee pattern** in the new Marquee lights section:
+- **None:** leaves all prior saved lightboxes and diffuser faces unchanged.
+- **Outer silhouette:** an evenly spaced row follows an inward offset of the
+  lightbox outline, even without uploaded colour artwork.
+- **Black artwork border:** places a row in the printable black filament band.
+  Select a sufficiently wide **Black** artwork border first. The hole inset
+  is the distance from the **outer silhouette** to each hole centre.
+- **Inside each colour-section edge:** rows follow every retained, printable
+  colour contour, inset **into each colour section**, similar to illuminated
+  colour boundaries on a marquee-style sign. Adjacent colours may have separate
+  parallel rows; narrow colour regions can be too small for the chosen holes.
+
+Control the **total count** (1–240 holes), **hole diameter** (1.5–10 mm) and
+**inset** (0–20 mm). Holes are equally spaced by arc length around each contour;
+when multiple contours exist, the requested count is distributed by contour
+perimeter. Counts are exact when geometry succeeds. Impossible layouts (holes
+too close to the outside wall, intersecting neighbours, missing colour profiles,
+or holes that cannot fit in a black band) report a clear error rather than
+producing a misleading 3MF.
+
+These are genuine **through-holes in the separate diffuser cover**, including
+its white backing and coloured/black 0.4 mm inlay regions. The shell and rear
+panel are not drilled by this feature; its independent cable holes remain
+unchanged. The face must be fitted with appropriate LED modules and secured
+and wired separately. Check LED body diameter and flange tolerance before
+printing. Hole spacing, structural strength, thermal safety and electrical
+installation are not automatically certified; begin with a small test print.
+
+The marquee options are saved in JSON projects. Projects created before this
+feature reopen with the layout disabled so existing 3MF geometry is unchanged.

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import Module from 'manifold-3d';
 import { buildLightbox } from '../src/geometry';
+import { sampleMarqueeHoles, marqueeCircles } from '../src/marquee';
 import { DEFAULT_SETTINGS, coerceSettings, type ArtworkRegion } from '../src/state';
 import { processImage } from '../../../packages/trace/src/pipeline';
 
@@ -190,6 +191,80 @@ assert.equal(bounded.borderColor, 'none');
 assert.deepEqual([bounded.hole1Angle, bounded.hole2Angle, bounded.hole1Depth, bounded.hole2Depth, bounded.borderWidth],
   [0, 359, 0, 100, 12]);
 
+// Marquee positions are true evenly spaced, separate front-cover through-holes.
+const guideSquare: [number, number][] = [[-20,-20],[20,-20],[20,20],[-20,20]];
+const locations = sampleMarqueeHoles([guideSquare], 16, 2,
+  [[-30,-30],[30,-30],[30,30],[-30,30]], 3);
+assert.equal(locations.length, 16, 'exact total number of holes');
+assert.equal(marqueeCircles(locations, 2).length, 16);
+assert.deepEqual(locations.slice(0, 4),
+  [[-15,-20],[-5,-20],[5,-20],[15,-20]],
+  'four equally spaced lights along the first side');
+assert.deepEqual(locations[4], [20,-15],
+  'arc-length spacing continues correctly round a corner');
+assert.throws(() => sampleMarqueeHoles([guideSquare], 240, 4,
+  [[-30,-30],[30,-30],[30,30],[-30,30]], 3), /overlap|closely spaced/i);
+assert.throws(() => sampleMarqueeHoles([guideSquare], 8, 4,
+  [[-21,-21],[21,-21],[21,21],[-21,21]], 3), /edge/i);
+const oldMarquee = coerceSettings({ ...DEFAULT_SETTINGS, marqueeLayout: 'invalid' });
+assert.equal(oldMarquee.marqueeLayout, 'none', 'old projects stay unchanged');
+const marqueeProject = coerceSettings({ ...DEFAULT_SETTINGS,
+  marqueeLayout: 'regions', marqueeCount: 37, marqueeDiameter: 3.5, marqueeInset: 7 });
+assert.deepEqual([marqueeProject.marqueeLayout, marqueeProject.marqueeCount,
+  marqueeProject.marqueeDiameter, marqueeProject.marqueeInset], ['regions', 37, 3.5, 7]);
+const boundMarquee = coerceSettings({
+  marqueeLayout: 'outer', marqueeCount: 999, marqueeDiameter: -2, marqueeInset: 99,
+});
+assert.deepEqual([boundMarquee.marqueeCount, boundMarquee.marqueeDiameter,
+  boundMarquee.marqueeInset], [240, 1.5, 20]);
+
+const marqueeOuter = buildLightbox(wasm, {
+  ...coerceSettings(DEFAULT_SETTINGS), marqueeLayout: 'outer',
+  marqueeCount: 32, marqueeDiameter: 2.5, marqueeInset: 5,
+});
+assert.equal(marqueeOuter.parts.length, 2);
+assert.ok(meshVolume(marqueeOuter.parts[1]!) < meshVolume(flatCover.parts[1]!) - 100,
+  'outer marquee bores physically remove material from the diffuser');
+assert.ok(marqueeOuter.warnings.some(w => w.includes('32 marquee holes')));
+verifyMeshes(marqueeOuter);
+for (const lipPlacement of ['cover', 'box'] as const) {
+  const marqueeLip = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
+    marqueeLayout: 'outer', marqueeCount: 12, marqueeDiameter: 2.5,
+    marqueeInset: 7, lipPlacement, diffuserThickness: 2,
+  });
+  assert.equal(marqueeLip.parts.length, 2);
+  verifyMeshes(marqueeLip);
+}
+const blackMarquee = buildLightbox(wasm, {
+  ...coerceSettings(DEFAULT_SETTINGS), artwork,
+  marqueeLayout: 'border', marqueeCount: 24,
+  marqueeDiameter: 2.5, marqueeInset: 5,
+  borderColor: 'black', borderWidth: 9,
+});
+assert.equal(blackMarquee.parts.length, 5);
+assert.ok(meshVolume(blackMarquee.parts[4]!) <
+  meshVolume(buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS), artwork,
+    borderColor: 'black', borderWidth: 9 }).parts[4]!),
+  'black filament border must also be drilled');
+verifyMeshes(blackMarquee);
+assert.throws(() => buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
+  marqueeLayout: 'border', borderColor: 'none' }), /black artwork border/i);
+assert.throws(() => buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
+  artwork, marqueeLayout: 'border', borderColor: 'black', borderWidth: 4 }), /wider black border/i);
+
+const colourMarquee = buildLightbox(wasm, {
+  ...coerceSettings(DEFAULT_SETTINGS), artwork, marqueeLayout: 'regions',
+  marqueeCount: 24, marqueeDiameter: 2.5, marqueeInset: 6,
+});
+assert.equal(colourMarquee.parts.length, 4, 'keeps coloured 3MF parts');
+for (let i = 1; i < 4; i++) {
+  assert.ok(meshVolume(colourMarquee.parts[i]!) <
+    meshVolume(ordinary.parts[i]!), 'drills diffuser or coloured face layer ' + i);
+}
+verifyMeshes(colourMarquee);
+assert.throws(() => buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
+  marqueeLayout: 'regions' }), /requires printable traced/i);
+
 // One known two-color alpha logo run through the ORIGINAL @vostok/trace pipeline.
 // Both the shell silhouette and the artwork regions must come from this single result.
 const W = 96, H = 72;
@@ -205,4 +280,4 @@ const traced = processImage({data: pixels, width:W, height:H}, 2,
   {removeBg:true, smoothing:0.4, preserveDetail:true, designMm:120});
 assert.ok(traced.outline.length > 0, 'tracer returns shell silhouette');
 assert.ok(traced.regions.length >= 2, 'tracer retains both image colors');
-console.log('LED lightbox: image tracing, colour diffuser, both registration-lip placements, groove clearance, thickness, printable orientation, dual-positioned wire exits, black/white artwork borders and project settings passed.');
+console.log('LED lightbox: image tracing, colour diffuser, both registration-lip placements, groove clearance, thickness, printable orientation, dual-positioned wire exits, black/white artwork borders, marquee perforations and project settings passed.');
