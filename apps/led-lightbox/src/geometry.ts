@@ -5,6 +5,7 @@ import { csOf, extrude, ringsOf, withScope } from '@vostok/manifold';
 import { poleOf, signedArea } from '@vostok/shapes';
 import { exportPartOf, type ExportPart, type RGB } from '@vostok/export';
 import type { LightboxSettings } from './state';
+import { marqueeCircles, sampleMarqueeHoles } from './marquee';
 
 type Ring = [number, number][];
 export interface LightboxBuild {
@@ -46,7 +47,8 @@ function makePart(solid: any, name: string, color: RGB, group: string): ExportPa
 export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBuild {
   const { outline, size, depth, wall, back, ledgeWidth, ledgeHeight, wireExit, holeDiameter,
     diffuserThickness, includeColors, artwork, lipPlacement, lipWidth, lipHeight, lipClearance,
-    borderColor, borderWidth, hole1Angle, hole2Angle, hole1Depth, hole2Depth } = settings;
+    borderColor, borderWidth, hole1Angle, hole2Angle, hole1Depth, hole2Depth,
+    marqueeLayout, marqueeCount, marqueeDiameter, marqueeInset } = settings;
   if (outline.length < 3) throw new Error('Load an image with a solid outer silhouette.');
   const maxX = Math.max(...outline.map((p) => p[0]));
   const minX = Math.min(...outline.map((p) => p[0]));
@@ -160,7 +162,10 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
     const bottomHeight = hasArtwork ? diffuserThickness - FACE_LAYER : diffuserThickness;
     const backing = keep(keep(extrude(wasm, outer, bottomHeight))
       .translate([0, 0, hasArtwork && faceDown ? FACE_LAYER : 0]));
-    const overlayParts: ExportPart[] = [];
+    // Delay export until the same set of through-holes has been removed from
+    // the white backing and every separate coloured / black filament object.
+    const overlaySolids: { solid: any; name: string; color: RGB }[] = [];
+    const colorProfiles: any[] = [];
     let whiteCover = backing;
     if (hasArtwork) {
       // Insetting the artwork leaves a configurable solid face band. A black band
@@ -200,6 +205,7 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         if (clipped.isEmpty()) continue;
         combined = combined ? keep(combined.add(clipped)) : clipped;
         prepared.push({ cross: clipped, name: 'Artwork colour ' + (i + 1), color: region.color });
+        colorProfiles.push(clipped);
       }
       if (prepared.length && combined) {
         const whiteTop = keep(blackBand ? keep(outer.subtract(combined)).subtract(blackBand) : outer.subtract(combined));
@@ -211,15 +217,12 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         for (const region of prepared) {
           const layer = keep(keep(extrude(wasm, region.cross, FACE_LAYER))
             .translate([0, 0, faceBottom]));
-          const translated = keep(layer.translate([move[0], move[1], 0]));
-          const part = makePart(translated, region.name, region.color, 'Diffuser cover');
-          if (part) overlayParts.push(part);
+          overlaySolids.push({ solid: layer, name: region.name, color: region.color });
         }
         if (blackBand && !blackBand.isEmpty()) {
           const face = keep(keep(extrude(wasm, blackBand, FACE_LAYER))
-            .translate([0, 0, faceBottom]).translate([move[0], move[1], 0]));
-          const borderPart = makePart(face, 'Black artwork border', BLACK, 'Diffuser cover');
-          if (borderPart) overlayParts.push(borderPart);
+            .translate([0, 0, faceBottom]));
+          overlaySolids.push({ solid: face, name: 'Black artwork border', color: BLACK });
         }
       } else {
         warnings.push('The image had no printable colour regions; generated a plain white diffuser.');
@@ -250,9 +253,50 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
       if (whiteCover.isEmpty()) throw new Error('Groove removed the diffuser. Increase diffuser thickness or reduce lip width.');
     }
     if (lipPlacement !== 'none') warnings.push('Registration profile: test fit with a short print; clearance is radial, per side.');
+    if (marqueeLayout !== 'none') {
+      if (marqueeLayout === 'border' && borderColor !== 'black') {
+        throw new Error('Select a black artwork border to place marquee holes along the black band.');
+      }
+      if (marqueeLayout === 'border' && (!hasArtwork ||
+        marqueeInset + marqueeDiameter / 2 + 0.25 > borderWidth)) {
+        throw new Error('Marquee holes need a wider black border, a smaller inset or smaller diameter.');
+      }
+      if (marqueeLayout === 'regions' && !colorProfiles.length) {
+        throw new Error('Color-edge marquee layout requires printable traced image colours.');
+      }
+      let paths: Ring[] = [];
+      if (marqueeLayout === 'regions') {
+        // Offset the actual printable colour profiles, including their cutout
+        // rings. The inside of each coloured section gets its own light row.
+        for (const profile of colorProfiles) {
+          const insetProfile = keep(profile.offset(-marqueeInset, 'Round', 2, 16));
+          if (!insetProfile.isEmpty()) paths.push(...ringsOf(insetProfile));
+        }
+      } else {
+        // An outer row can be made without artwork. Black-border mode tracks
+        // the visible outer band at an adjustable centreline inset.
+        const insetProfile = keep(outer.offset(-marqueeInset, 'Round', 2, 16));
+        if (!insetProfile.isEmpty()) paths = ringsOf(insetProfile);
+      }
+      const positions = sampleMarqueeHoles(paths, marqueeCount, marqueeDiameter,
+        points, wall + 0.35);
+      const bores2d = keep(csOf(wasm, marqueeCircles(positions, marqueeDiameter), 'Positive'));
+      // Overshoot both faces, including an optional raised diffuser lip.
+      const bores = keep(keep(extrude(wasm, bores2d, diffuserThickness + lipHeight + 2))
+        .translate([0, 0, -1]));
+      whiteCover = keep(whiteCover.subtract(bores));
+      for (const overlay of overlaySolids) overlay.solid = keep(overlay.solid.subtract(bores));
+      warnings.push(positions.length + ' marquee holes: fit and secure individual LEDs after printing.');
+    }
     const positioned = keep(whiteCover.translate([move[0], move[1], 0]));
     const coverPart = makePart(positioned, 'Translucent diffuser', WHITE, 'Diffuser cover');
     if (!coverPart) throw new Error('Could not generate the diffuser cover.');
+    const overlayParts: ExportPart[] = [];
+    for (const overlay of overlaySolids) {
+      const shifted = keep(overlay.solid.translate([move[0], move[1], 0]));
+      const part = makePart(shifted, overlay.name, overlay.color, 'Diffuser cover');
+      if (part) overlayParts.push(part);
+    }
     parts.push(coverPart, ...overlayParts);
     if (overlayParts.length) {
       warnings.push('Colour appearance depends on translucent filament and illumination; print a small light test first.');
