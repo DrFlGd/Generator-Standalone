@@ -166,7 +166,19 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
       // Insetting the artwork leaves a configurable solid face band. A black band
       // becomes its own 0.4 mm filament object, never overlapping the white face.
       const inset = borderColor === 'none' ? 0.2 : borderWidth;
-      const imageArea = keep(outer.offset(-inset, 'Round', 2, 16));
+      // Shrink the entire traced image, rather than merely cropping away its
+      // edge pixels. Uniform scaling preserves the image's original proportions.
+      // Clip to the offset profile only where an irregular concave boundary needs it.
+      if (inset * 2 >= Math.min(width, height)) {
+        throw new Error('Image border is too wide for this silhouette. Reduce border width.');
+      }
+      const imageScale = borderColor === 'none' ? 1 : Math.min(
+        (width - inset * 2) / width, (height - inset * 2) / height,
+      );
+      const insetArea = keep(outer.offset(-inset, 'Round', 2, 16));
+      const imageArea = borderColor === 'none' ? insetArea : keep(insetArea.intersect(
+        keep(csOf(wasm, [points.map(([x, y]) => [x * imageScale, y * imageScale])], 'EvenOdd')),
+      ));
       if (imageArea.isEmpty()) throw new Error('Image border is too wide for this silhouette. Reduce border width.');
       const blackBand = borderColor === 'black' ? keep(outer.subtract(imageArea)) : null;
       let combined: any = null;
@@ -178,9 +190,9 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         for (const component of region.components) {
           if (++pieceCount > 120) break;
           if (!component.length) continue;
-          const first = projected(component[0]!, cx, cy, scale);
+          const first = projected(component[0]!, cx, cy, scale * imageScale);
           if (Math.abs(signedArea(first)) < 0.25) continue;
-          for (const ring of component) transformed.push(projected(ring, cx, cy, scale));
+          for (const ring of component) transformed.push(projected(ring, cx, cy, scale * imageScale));
         }
         if (!transformed.length) continue;
         const raw = keep(csOf(wasm, transformed, 'EvenOdd'));
