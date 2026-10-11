@@ -70,7 +70,10 @@ export function sampleMarqueeHoles(
   const left = count - counts.reduce((n, c) => n + c, 0);
   const order = quotas.map((q, i) => ({ i, rest: q - Math.floor(q) }))
     .sort((a, b) => b.rest - a.rest);
-  for (let i = 0; i < left; i++) counts[order[i]!.i]!++;
+  for (let i = 0; i < left; i++) {
+    const index = order[i]!.i;
+    counts[index] = counts[index]! + 1;
+  }
 
   const holes: Point[] = [];
   for (let i = 0; i < loops.length; i++) {
