@@ -27,7 +27,7 @@ function makePart(solid: any, name: string, color: RGB, group: string): ExportPa
 }
 export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBuild {
   const { outline, size, depth, wall, back, ledgeWidth, ledgeHeight, wireExit, holeDiameter,
-    diffuserThickness, includeColors, artwork } = settings;
+    diffuserThickness, includeColors, artwork, lipPlacement, lipWidth, lipHeight, lipClearance } = settings;
   if (outline.length < 3) throw new Error('Load an image with a solid outer silhouette.');
   const maxX = Math.max(...outline.map((p) => p[0]));
   const minX = Math.min(...outline.map((p) => p[0]));
@@ -39,6 +39,12 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
     throw new Error('Increase box depth or decrease the back and LED ledge heights.');
   }
   if (!(diffuserThickness >= FACE_LAYER + 0.19)) throw new Error('Diffuser must be at least 0.6 mm thick.');
+  if (lipPlacement === 'box' && diffuserThickness - lipHeight - 0.05 < 0.5) {
+    throw new Error('Lip on box requires a thicker diffuser (at least lip height + 0.55 mm) to leave a solid roof over its receiving groove.');
+  }
+  if (lipPlacement === 'cover' && depth - back - ledgeHeight < lipHeight + 0.7) {
+    throw new Error('Lip on cover needs more clearance above the LED shelf: increase box depth or reduce lip height.');
+  }
   const scale = size / longest;
   const cx = (maxX + minX) / 2, cy = (maxY + minY) / 2;
   const width = extX * scale, height = extY * scale;
@@ -83,6 +89,17 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
       shell = keep(shell.subtract(cutter));
       if (width > 3 * height) warnings.push('Inspect the side exit on long or irregular silhouettes.');
     }
+    // In box-lip mode, an integral male ridge stands above the outer wall's rim.
+    // Its mating female groove is carved into the underside of the diffuser.
+    const boxRidgeOuter = lipPlacement === 'box'
+      ? keep(outer.offset(-wall * 0.45, 'Round', 2, 16)) : null;
+    if (boxRidgeOuter) {
+      const ridgeInside = keep(boxRidgeOuter.offset(-lipWidth, 'Round', 2, 16));
+      if (ridgeInside.isEmpty()) throw new Error('Lip is too wide for this silhouette; enlarge the box or reduce lip width.');
+      const ridgeBand = keep(boxRidgeOuter.subtract(ridgeInside));
+      const male = keep(keep(extrude(wasm, ridgeBand, lipHeight + 0.04)).translate([0, 0, depth - 0.02]));
+      shell = keep(shell.add(male));
+    }
     const shellPart = makePart(shell, 'LED lightbox shell', SHELL, 'Lightbox shell');
     if (!shellPart) throw new Error('The silhouette could not form a printable lightbox.');
     const parts: ExportPart[] = [shellPart];
@@ -91,8 +108,14 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
     // It has the same outer outline; unlike an undersized insert it cannot fall inside.
     // The white base and complementary white top are fused into one printable body.
     const hasArtwork = includeColors && artwork.length > 0;
+    // A registration lip/groove needs the underside facing UP during printing, so
+    // the artwork prints face-down on the bed. Without a lip, preserve v0.6's
+    // original face-up layout. Both layouts keep all regions in contact with the bed.
+    const faceDown = lipPlacement !== 'none';
+    const faceBottom = faceDown ? 0 : diffuserThickness - FACE_LAYER;
     const bottomHeight = hasArtwork ? diffuserThickness - FACE_LAYER : diffuserThickness;
-    const backing = keep(extrude(wasm, outer, bottomHeight));
+    const backing = keep(keep(extrude(wasm, outer, bottomHeight))
+      .translate([0, 0, hasArtwork && faceDown ? FACE_LAYER : 0]));
     const overlayParts: ExportPart[] = [];
     let whiteCover = backing;
     if (hasArtwork) {
@@ -123,12 +146,12 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         const whiteTop = keep(outer.subtract(combined));
         if (!whiteTop.isEmpty()) {
           const upper = keep(keep(extrude(wasm, whiteTop, FACE_LAYER))
-            .translate([0, 0, bottomHeight]));
+            .translate([0, 0, faceBottom]));
           whiteCover = keep(backing.add(upper));
         }
         for (const region of prepared) {
           const layer = keep(keep(extrude(wasm, region.cross, FACE_LAYER))
-            .translate([0, 0, bottomHeight]));
+            .translate([0, 0, faceBottom]));
           const translated = keep(layer.translate([move[0], move[1], 0]));
           const part = makePart(translated, region.name, region.color, 'Diffuser cover');
           if (part) overlayParts.push(part);
@@ -138,6 +161,30 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         whiteCover = keep(extrude(wasm, outer, diffuserThickness));
       }
     }
+    if (lipPlacement === 'cover') {
+      // The diffuser's male tongue nests *inside* the shell wall. A radial
+      // clearance on each side avoids mating surfaces being coincident.
+      const tongueOuter = keep(interior.offset(-lipClearance, 'Round', 2, 16));
+      const tongueInner = keep(tongueOuter.offset(-lipWidth, 'Round', 2, 16));
+      if (tongueInner.isEmpty()) throw new Error('The cover lip has no inner opening. Reduce its width or increase the design size.');
+      const tongueBand = keep(tongueOuter.subtract(tongueInner));
+      const tongue = keep(keep(extrude(wasm, tongueBand, lipHeight + 0.02))
+        .translate([0, 0, diffuserThickness - 0.01]));
+      whiteCover = keep(whiteCover.add(tongue));
+    } else if (lipPlacement === 'box') {
+      // Oversize BOTH edges of the ridge's receiving groove by the tolerance.
+      // The groove opens upward in the print orientation; the colour face is
+      // printed against the bed and stays intact (>=0.5 mm roof in assembly).
+      const grooveOuter = keep(outer.offset(-wall * 0.45 + lipClearance, 'Round', 2, 16));
+      const grooveInner = keep(outer.offset(-wall * 0.45 - lipWidth - lipClearance, 'Round', 2, 16));
+      if (grooveInner.isEmpty()) throw new Error('The diffuser groove does not fit this silhouette. Reduce lip width or tolerance.');
+      const grooveBand = keep(grooveOuter.subtract(grooveInner));
+      const grooveCut = keep(keep(extrude(wasm, grooveBand, lipHeight + 0.12))
+        .translate([0, 0, diffuserThickness - lipHeight - 0.08]));
+      whiteCover = keep(whiteCover.subtract(grooveCut));
+      if (whiteCover.isEmpty()) throw new Error('Groove removed the diffuser. Increase diffuser thickness or reduce lip width.');
+    }
+    if (lipPlacement !== 'none') warnings.push('Registration profile: test fit with a short print; clearance is radial, per side.');
     const positioned = keep(whiteCover.translate([move[0], move[1], 0]));
     const coverPart = makePart(positioned, 'Translucent diffuser', WHITE, 'Diffuser cover');
     if (!coverPart) throw new Error('Could not generate the diffuser cover.');
