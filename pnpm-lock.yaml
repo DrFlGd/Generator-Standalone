@@ -793,6 +793,9 @@ importers:
 
   packages/ui-kit:
     dependencies:
+      '@vostok/trace':
+        specifier: workspace:*
+        version: link:../trace
       '@vostok/brand':
         specifier: workspace:*
         version: link:../../config
