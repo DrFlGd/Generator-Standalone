@@ -12,7 +12,7 @@ import { plateSize, mountPlatePicker, loadPlateChoice } from '@vostok/plates';
 import { downloadThreeMF, downloadFile } from '@vostok/export';
 import { loadFileToImage, processImage, type RgbaImage, type Ring } from '@vostok/trace';
 import { signedArea } from '@vostok/shapes';
-import { runWizard } from '@vostok/ui-kit/prepare-image';
+import { openPrepareImage } from '@vostok/ui-kit/prepare-image';
 import { DEFAULT_SETTINGS, coerceSettings, type LightboxSettings, type WireExit, type LipPlacement, type ArtworkRegion } from './state';
 import type { LightboxBuild } from './geometry';
 
@@ -91,7 +91,7 @@ function retrace(): void {
 }
 function prepareImage(base: RgbaImage, file?: File) {
   const reopening = base === sourceImage;
-  runWizard({
+  openPrepareImage({
     baseImage: base,
     maxColors: 6,
     initialColorCount: settings.colorCount,

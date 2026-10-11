@@ -69,7 +69,7 @@ import {
   thumbGrid,
   thumbTile,
   openSvgImport,
-  runWizard,
+  openPrepareImage,
   fontChooser,
   symbolPickerButton,
   symbolTextField,
@@ -214,8 +214,8 @@ for (let y = 10; y < 86; y++) for (let x = 12; x < 100; x++) {
   preparedDemo[p + 3] = 255;
 }
 app.append(
-  entry('runWizard()', 'Prepare Image', 'The original Clicker image wizard, shared by Clicker and LED Lightbox: choose colours, remove background, smooth contours, preview the trace and adjust the picture.',
-    button({ label: 'Open Prepare Image', emphasis: 'primary', onClick: () => runWizard({
+  entry('openPrepareImage()', 'Prepare Image', 'The original Clicker image wizard, shared by Clicker and LED Lightbox: choose colours, remove background, smooth contours, preview the trace and adjust the picture.',
+    button({ label: 'Open Prepare Image', emphasis: 'primary', onClick: () => openPrepareImage({
       baseImage: { width: 112, height: 96, data: preparedDemo },
       initialColorCount: 2, initialSmoothing: 0.15,
       initialRemoveBg: true, designMm: 120,

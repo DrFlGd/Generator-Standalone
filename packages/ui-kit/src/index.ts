@@ -340,4 +340,4 @@ export {
 } from './symbols/rules';
 
 // Exact reusable Clicker / Lightbox image-preparation dialog.
-export { runWizard, type WizardResult } from './components/prepare-image';
+export { openPrepareImage, type WizardResult } from './components/prepare-image';

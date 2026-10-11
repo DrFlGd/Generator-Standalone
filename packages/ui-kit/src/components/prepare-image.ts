@@ -135,7 +135,7 @@ function regionsToCanvas(set: RegionSet, width: number, height: number): HTMLCan
   return c;
 }
 
-export function runWizard(opts: WizardOpts) {
+export function openPrepareImage(opts: WizardOpts) {
   const params: PreprocessParams = { ...DEFAULT_PREPROCESS, ...(opts.initialPreprocess ?? {}) };
   params.keepBackground = !opts.initialRemoveBg;
   /* How many colours to keep when nothing has been ticked yet — biggest first. */

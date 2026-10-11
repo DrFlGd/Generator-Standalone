@@ -170,7 +170,7 @@
       "name": "Prepare Image wizard",
       "category": "ui",
       "use": [
-        "runWizard"
+        "openPrepareImage"
       ],
       "for": "The shared Clicker/Lightbox picture preparation modal: preview original and traced regions, keep/unkeep filament colours, remove background, smooth outlines, adjust tone, zoom/pan, confirm/cancel."
     },
