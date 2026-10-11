@@ -177,7 +177,7 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
       );
       const insetArea = keep(outer.offset(-inset, 'Round', 2, 16));
       const imageArea = borderColor === 'none' ? insetArea : keep(insetArea.intersect(
-        keep(csOf(wasm, [points.map(([x, y]) => [x * imageScale, y * imageScale])], 'EvenOdd')),
+        keep(csOf(wasm, [points.map(([x, y]) => [x * imageScale, y * imageScale] as [number, number])], 'EvenOdd')),
       ));
       if (imageArea.isEmpty()) throw new Error('Image border is too wide for this silhouette. Reduce border width.');
       const blackBand = borderColor === 'black' ? keep(outer.subtract(imageArea)) : null;
