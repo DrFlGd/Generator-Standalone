@@ -48,7 +48,7 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
   const { outline, size, depth, wall, back, ledgeWidth, ledgeHeight, wireExit, holeDiameter,
     diffuserThickness, includeColors, artwork, lipPlacement, lipWidth, lipHeight, lipClearance,
     borderColor, borderWidth, hole1Angle, hole2Angle, hole1Depth, hole2Depth,
-    marqueeLayout, marqueeCount, marqueeDiameter, marqueeInset } = settings;
+    marqueeLayout, marqueeCount, marqueeDiameter, marqueeInset, marqueeShift } = settings;
   if (outline.length < 3) throw new Error('Load an image with a solid outer silhouette.');
   const maxX = Math.max(...outline.map((p) => p[0]));
   const minX = Math.min(...outline.map((p) => p[0]));
@@ -76,7 +76,9 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
   // separation fit a nominal 256 mm bed (users must check their own plate).
   const move: [number, number] = width <= height ? [width + PLATE_GAP, 0] : [0, height + PLATE_GAP];
   const warnings: string[] = [];
-  if (Math.min(width, height) * 2 + PLATE_GAP > 250) {
+  if (Math.max(width, height) > 250) {
+    warnings.push('At least one part exceeds a typical 250 mm print bed; use a larger printer or split your design.');
+  } else if (Math.min(width, height) * 2 + PLATE_GAP > 250) {
     warnings.push('The shell and cover may not both fit your build plate; arrange the 3MF objects separately.');
   }
   return withScope((keep) => {
@@ -110,13 +112,15 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
       shell = keep(shell.subtract(cutter));
       if (width > 3 * height) warnings.push('Inspect the side exit on long or irregular silhouettes.');
     }
-    if (wireExit === 'dual') {
+    if (wireExit === 'single' || wireExit === 'dual') {
       // Each hole travels from the hollow interior radially through the FIRST
       // outline wall it meets. Unlike a full-width bore this cannot accidentally
       // drill the far side of a concave or narrow silhouette.
       const freeHeight = depth - back - holeDiameter - 1.2;
-      if (freeHeight < 0) throw new Error('Increase box depth or reduce cable hole diameter for two side exits.');
-      for (const [angle, fromBack] of [[hole1Angle, hole1Depth], [hole2Angle, hole2Depth]]) {
+      if (freeHeight < 0) throw new Error('Increase box depth or reduce cable hole diameter for positioned side exits.');
+      const positions = wireExit === 'single'
+        ? [[hole1Angle, hole1Depth]] : [[hole1Angle, hole1Depth], [hole2Angle, hole2Depth]];
+      for (const [angle, fromBack] of positions) {
         const radians = angle * Math.PI / 180;
         const direction: [number, number] = [Math.cos(radians), Math.sin(radians)];
         const hit = rayDistance(points, spot.at, direction);
@@ -279,7 +283,7 @@ export function buildLightbox(wasm: any, settings: LightboxSettings): LightboxBu
         if (!insetProfile.isEmpty()) paths = ringsOf(insetProfile);
       }
       const positions = sampleMarqueeHoles(paths, marqueeCount, marqueeDiameter,
-        points, wall + 0.35);
+        points, wall + 0.35, marqueeShift);
       const bores2d = keep(csOf(wasm, marqueeCircles(positions, marqueeDiameter), 'Positive'));
       // Overshoot both faces, including an optional raised diffuser lip.
       const bores = keep(keep(extrude(wasm, bores2d, diffuserThickness + lipHeight + 2))
