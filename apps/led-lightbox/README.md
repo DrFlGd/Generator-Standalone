@@ -120,3 +120,29 @@ installation are not automatically certified; begin with a small test print.
 
 The marquee options are saved in JSON projects. Projects created before this
 feature reopen with the layout disabled so existing 3MF geometry is unchanged.
+
+
+### Larger lightboxes, one side exit and precise marquee adjustment
+
+The **longest side** can be set to **600 mm** (previous maximum: 250 mm).
+At large sizes, the box and separate diffuser can exceed common 3D-printer
+beds. A warning is shown if either part is larger than 250 mm. Select a
+suitably large printer or split the parts before printing.
+
+**One positioned side hole** creates a single radial cable exit, using the
+existing **Hole 1 angle** and **Hole 1 from back** controls. Hole 2 is ignored
+in this mode. **Two positioned side holes** still uses both independent
+positions; the older fixed side/back choices are also preserved.
+
+The marquee hole **diameter** and **inset** sliders now move in **0.1 mm**
+increments. **Marquee pattern shift** translates the evenly spaced hole
+centres around each selected closed outline, in steps of **0.1 mm**, from
+-100 to +100 mm. Positive shift advances in the contour's traversal
+direction and negative shift moves backwards; the shift wraps seamlessly
+around each contour. The same physical offset applies independently to
+each colour-section loop. Hole count and even spacing do not change, but
+the placement validation can still flag positions that collide with other
+holes or approach the enclosure wall too closely.
+
+All new selections are included in saved JSON projects. Previously saved
+projects default to a zero marquee shift and keep their original wire exit.
