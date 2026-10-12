@@ -1,6 +1,6 @@
 import { DEFAULT_PREPROCESS, type RGB, type Ring, type PreprocessParams } from '@vostok/trace';
 
-export type WireExit = 'none' | 'side' | 'back' | 'both' | 'dual';
+export type WireExit = 'none' | 'side' | 'back' | 'both' | 'single' | 'dual';
 export type BorderColor = 'none' | 'white' | 'black';
 export type MarqueeLayout = 'none' | 'outer' | 'border' | 'regions';
 export type LipPlacement = 'none' | 'cover' | 'box';
@@ -33,6 +33,8 @@ export interface LightboxSettings {
   marqueeCount: number;
   marqueeDiameter: number;
   marqueeInset: number;
+  /** Arc-length shift along every selected closed marquee contour, in millimetres. */
+  marqueeShift: number;
   removeBackground: boolean;
   /** Thickness of the entire diffuser including its 0.4 mm multicolour face layer. */
   diffuserThickness: number;
@@ -59,6 +61,7 @@ export const DEFAULT_SETTINGS: LightboxSettings = {
   wireExit: 'back', hole1Angle: 0, hole2Angle: 180,
   hole1Depth: 35, hole2Depth: 35, borderColor: 'none', borderWidth: 4,
   marqueeLayout: 'none', marqueeCount: 32, marqueeDiameter: 2.5, marqueeInset: 5,
+  marqueeShift: 0,
   removeBackground: true,
   diffuserThickness: 1.2, includeColors: true, colorCount: 4,
   smoothing: 0.4, limitedColors: [], preprocess: { ...DEFAULT_PREPROCESS },
@@ -66,15 +69,16 @@ export const DEFAULT_SETTINGS: LightboxSettings = {
   outline: DEFAULT_OUTLINE.map((p) => [...p]), artwork: [],
 };
 const limits: Record<Exclude<keyof LightboxSettings, 'wireExit' | 'removeBackground' | 'includeColors' | 'outline' | 'artwork' | 'limitedColors' | 'preprocess' | 'lipPlacement' | 'borderColor' | 'marqueeLayout'>, [number, number]> = {
-  size: [45, 250], depth: [10, 60], wall: [1.2, 5], back: [1.2, 5],
+  size: [45, 600], depth: [10, 60], wall: [1.2, 5], back: [1.2, 5],
   ledgeWidth: [3, 12], ledgeHeight: [0.8, 4], holeDiameter: [2, 10],
   hole1Angle: [0, 359], hole2Angle: [0, 359],
   hole1Depth: [0, 100], hole2Depth: [0, 100], borderWidth: [0.5, 12],
   marqueeCount: [1, 240], marqueeDiameter: [1.5, 10], marqueeInset: [0, 20],
+  marqueeShift: [-100, 100],
   diffuserThickness: [0.6, 3], colorCount: [1, 6], smoothing: [0,1],
   lipWidth: [0.6, 2.4], lipHeight: [0.4, 2.4], lipClearance: [0, 0.5],
 };
-const exits: WireExit[] = ['none', 'side', 'back', 'both', 'dual'];
+const exits: WireExit[] = ['none', 'side', 'back', 'both', 'single', 'dual'];
 const borders: BorderColor[] = ['none', 'white', 'black'];
 const marqueeLayouts: MarqueeLayout[] = ['none', 'outer', 'border', 'regions'];
 const placements: LipPlacement[] = ['none', 'cover', 'box'];
@@ -100,6 +104,10 @@ export function coerceSettings(raw: unknown): LightboxSettings {
   }
   out.colorCount = Math.round(out.colorCount);
   out.marqueeCount = Math.round(out.marqueeCount);
+  // Keep project settings aligned to their 0.1 mm UI slider resolution.
+  out.marqueeDiameter = Math.round(out.marqueeDiameter * 10) / 10;
+  out.marqueeInset = Math.round(out.marqueeInset * 10) / 10;
+  out.marqueeShift = Math.round(out.marqueeShift * 10) / 10;
   if (typeof v.marqueeLayout === 'string' && marqueeLayouts.includes(v.marqueeLayout as MarqueeLayout)) {
     out.marqueeLayout = v.marqueeLayout as MarqueeLayout;
   }
