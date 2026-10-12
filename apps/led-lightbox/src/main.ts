@@ -136,7 +136,7 @@ async function importFile(file: File) {
 }
 
 const sliders = {
-  size: sliderRow({ label: 'Longest side', min: 45, max: 250, step: 5, unit: 'mm', value: settings.size,
+  size: sliderRow({ label: 'Longest side', min: 45, max: 600, step: 5, unit: 'mm', value: settings.size,
     onInput: (v) => { settings.size = v; rebuild(true); } }),
   depth: sliderRow({ label: 'Box depth', min: 10, max: 60, step: 1, unit: 'mm', value: settings.depth,
     onInput: (v) => { settings.depth = v; rebuild(); } }),
@@ -168,12 +168,15 @@ const sliders = {
   marqueeCount: sliderRow({ label: 'Total marquee holes', min: 1, max: 240, step: 1, value: settings.marqueeCount,
     help: 'Total number of evenly spaced LED mounting holes across all selected guide paths.',
     onInput: (v) => { settings.marqueeCount = v; rebuild(); } }),
-  marqueeDiameter: sliderRow({ label: 'Marquee hole diameter', min: 1.5, max: 10, step: 0.5, unit: 'mm', value: settings.marqueeDiameter,
+  marqueeDiameter: sliderRow({ label: 'Marquee hole diameter', min: 1.5, max: 10, step: 0.1, unit: 'mm', value: settings.marqueeDiameter,
     help: 'Through-hole size for individually mounted LEDs; independent of the cable wiring hole.',
     onInput: (v) => { settings.marqueeDiameter = v; rebuild(); } }),
-  marqueeInset: sliderRow({ label: 'Marquee hole inset', min: 0, max: 20, step: 0.5, unit: 'mm', value: settings.marqueeInset,
+  marqueeInset: sliderRow({ label: 'Marquee hole inset', min: 0, max: 20, step: 0.1, unit: 'mm', value: settings.marqueeInset,
     help: 'Offset from the outer silhouette, from the black band outside edge, or inward from the edges of each colour region.',
     onInput: (v) => { settings.marqueeInset = v; rebuild(); } }),
+  marqueeShift: sliderRow({ label: 'Marquee pattern shift', min: -100, max: 100, step: 0.1, unit: 'mm', value: settings.marqueeShift,
+    help: 'Shift every hole along its chosen contour in 0.1 mm increments. Positive/negative values wrap around closed paths; hole count and spacing remain unchanged.',
+    onInput: (v) => { settings.marqueeShift = v; rebuild(); } }),
   holeDiameter: sliderRow({ label: 'Cable hole diameter', min: 2, max: 10, step: 0.5, unit: 'mm', value: settings.holeDiameter,
     onInput: (v) => { settings.holeDiameter = v; rebuild(); } }),
   hole1Angle: sliderRow({ label: 'Hole 1 angle', min: 0, max: 359, step: 1, unit: '°', value: settings.hole1Angle,
@@ -192,6 +195,7 @@ const sliders = {
 const wire = selectField<WireExit>({ label: 'Wire exit', value: settings.wireExit, options: [
   { value: 'none', label: 'No holes' }, { value: 'back', label: 'Back' },
   { value: 'side', label: 'Right side' }, { value: 'both', label: 'Back + right side' },
+  { value: 'single', label: 'One positioned side hole' },
   { value: 'dual', label: 'Two positioned side holes' },
 ], onChange: (v) => { settings.wireExit = v; rebuild(); } });
 const borderMode = selectField<BorderColor>({ label: 'Artwork border', value: settings.borderColor, options: [
@@ -298,7 +302,7 @@ const footer = sidebarFooter({
   }, PROJECT_FILE),
   onHelp: () => dialog({
     title: 'Image LED Lightbox help',
-    content: 'Marquee light holes cut through the diffuser (and each coloured face part), not the back panel. Choose an outer silhouette, the black band (enable a sufficiently wide black border), or the inset edge of every printable colour region. Count is total across all paths; inset is measured in millimetres. Holes too close to the shell rim or to each other show an error. Choose a white or black border to inset the artwork. Black is a separate filament part. Two radial side holes can be independently angled and positioned from back (0%) to front (100%). Upload artwork to open the Clicker-style Prepare Image dialog. Choose kept filament colours, background removal, smoothing and tone, then confirm the preview. The model includes a separate translucent diffuser with colour inlays. No lip: glue the cover. Lip on cover: a male tongue enters the hollow box. Lip on box: a male ridge engages a recess in the diffuser. Clearance is radial per side; 0.15–0.2 mm is a starting range, not a guaranteed fit. Box-lip mode requires diffuser thickness at least lip height + 0.55 mm. Print a small tolerance sample before committing a full model. The print-layout preview shows shell and cover side by side.',
+    content: 'Marquee pattern shift rotates the evenly spaced holes along their contours in 0.1 mm increments; values wrap around the path. One positioned side hole uses Hole 1 angle and from-back sliders and leaves Hole 2 unused. The 600 mm maximum size may require a large build plate or splitting parts. Marquee light holes cut through the diffuser (and each coloured face part), not the back panel. Choose an outer silhouette, the black band (enable a sufficiently wide black border), or the inset edge of every printable colour region. Count is total across all paths; inset is measured in millimetres. Holes too close to the shell rim or to each other show an error. Choose a white or black border to inset the artwork. Black is a separate filament part. Two radial side holes can be independently angled and positioned from back (0%) to front (100%). Upload artwork to open the Clicker-style Prepare Image dialog. Choose kept filament colours, background removal, smoothing and tone, then confirm the preview. The model includes a separate translucent diffuser with colour inlays. No lip: glue the cover. Lip on cover: a male tongue enters the hollow box. Lip on box: a male ridge engages a recess in the diffuser. Clearance is radial per side; 0.15–0.2 mm is a starting range, not a guaranteed fit. Box-lip mode requires diffuser thickness at least lip height + 0.55 mm. Print a small tolerance sample before committing a full model. The print-layout preview shows shell and cover side by side.',
     actions: [{ label: 'Got it', primary: true }],
   }),
   themeStorageKey: 'led-lightbox-theme',
@@ -328,10 +332,11 @@ const shell = appShell({
       ] }),
       collapsibleSection({ title: '4 · Marquee lights', body: [
         marqueeMode, sliders.marqueeCount, sliders.marqueeDiameter, sliders.marqueeInset,
+        sliders.marqueeShift,
         el('p', { className: 'vl-hint', text: 'Marquee mounting holes pass through the diffuser and traced colour layers. Outer follows the silhouette; black border follows the dark band; colour sections follow each inset colour edge. Keep holes clear of the outside wall and test actual LED fit.' }),
       ] }),
       collapsibleSection({ title: '5 · Wiring', body: [wire, sliders.holeDiameter,
-        el('p', { className: 'vl-hint', text: 'In Two positioned side holes mode, set each angle around the box and independently place it between the back panel and front.' }),
+        el('p', { className: 'vl-hint', text: 'One positioned side hole uses the Hole 1 angle and depth controls only; two positioned side holes also uses Hole 2.' }),
         sliders.hole1Angle, sliders.hole1Depth, sliders.hole2Angle, sliders.hole2Depth, reset] }),
     ],
     credit: panelCredit({ title: 'Image LED Lightbox' }),

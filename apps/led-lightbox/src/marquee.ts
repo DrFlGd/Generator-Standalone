@@ -54,10 +54,12 @@ function inside(p: Point, ring: Path): boolean {
  */
 export function sampleMarqueeHoles(
   paths: Path[], count: number, diameter: number, outside: Path, edgeClearance: number,
+  shiftMm = 0,
 ): Point[] {
   if (!Number.isInteger(count) || count < 1 || count > 240 || !(diameter > 0)) {
     throw new Error('Marquee hole count or diameter is invalid.');
   }
+  if (!Number.isFinite(shiftMm)) throw new Error('Marquee pattern shift must be a finite distance.');
   const loops = paths.map((path) => ({ path, length: lengthOf(path) }))
     .filter(({ path, length }) => path.length >= 3 && length > diameter * 2.5);
   if (!loops.length) throw new Error('No printable guide paths remain; decrease marquee inset.');
@@ -80,7 +82,9 @@ export function sampleMarqueeHoles(
     const { path, length } = loops[i]!;
     const n = counts[i]!;
     for (let j = 0; j < n; j++) {
-      const at = atDistance(path, length * (j + 0.5) / n);
+      // Shift each equally spaced centre by an arc length; closed contours wrap.
+      const arc = length * (j + 0.5) / n + shiftMm;
+      const at = atDistance(path, ((arc % length) + length) % length);
       if (!inside(at, outside) || edgeDistance(at, outside) < edgeClearance + diameter / 2 - 1e-5) {
         throw new Error('Marquee holes are too close to the lightbox edge. Increase inset or decrease diameter.');
       }
