@@ -158,6 +158,27 @@ const dualBase = { ...coerceSettings(DEFAULT_SETTINGS), wireExit: 'dual' as cons
 const bothAtSameSpot = buildLightbox(wasm, {
   ...dualBase, hole1Angle: 0, hole2Angle: 0, hole1Depth: 0, hole2Depth: 0,
 });
+// A single positioned side exit only drills Hole 1. Hole 2 controls do not
+// influence its geometry, while Hole 1 angle/back position do.
+const singleBase = { ...coerceSettings(DEFAULT_SETTINGS), wireExit: 'single' as const };
+const singleRight = buildLightbox(wasm, {
+  ...singleBase, hole1Angle: 0, hole1Depth: 0, hole2Angle: 180, hole2Depth: 100,
+});
+const singleUnchanged = buildLightbox(wasm, {
+  ...singleBase, hole1Angle: 0, hole1Depth: 0, hole2Angle: 75, hole2Depth: 10,
+});
+const singleTop = buildLightbox(wasm, {
+  ...singleBase, hole1Angle: 90, hole1Depth: 100,
+});
+assert.equal(singleRight.parts.length, 2);
+assert.deepEqual(Array.from(singleRight.parts[0]!.positions),
+  Array.from(singleUnchanged.parts[0]!.positions),
+  'unused second hole must not affect single mode');
+assert.notDeepEqual(Array.from(singleRight.parts[0]!.positions),
+  Array.from(singleTop.parts[0]!.positions),
+  'Hole 1 position changes the actual drilled geometry');
+verifyMeshes(singleRight);
+verifyMeshes(singleTop);
 const twoSeparate = buildLightbox(wasm, {
   ...dualBase, hole1Angle: 0, hole2Angle: 90, hole1Depth: 0, hole2Depth: 100,
 });
@@ -165,6 +186,8 @@ const angled = buildLightbox(wasm, {
   ...dualBase, hole1Angle: 45, hole2Angle: 220, hole1Depth: 20, hole2Depth: 80,
 });
 assert.equal(twoSeparate.parts.length, 2);
+assert.ok(meshVolume(twoSeparate.parts[0]!) < meshVolume(singleRight.parts[0]!),
+  'two positioned exits remove more material than one positioned exit');
 assert.ok(meshVolume(twoSeparate.parts[0]!) < meshVolume(bothAtSameSpot.parts[0]!),
   'independent angle/depth makes two exits instead of the same single cut');
 assert.ok(meshVolume(angled.parts[0]!) < meshVolume(flatCover.parts[0]!),
@@ -190,6 +213,9 @@ const bounded = coerceSettings({ wireExit: 'dual', borderColor: 'invalid',
 assert.equal(bounded.borderColor, 'none');
 assert.deepEqual([bounded.hole1Angle, bounded.hole2Angle, bounded.hole1Depth, bounded.hole2Depth, bounded.borderWidth],
   [0, 359, 0, 100, 12]);
+assert.equal(coerceSettings({ wireExit: 'single' }).wireExit, 'single');
+assert.equal(coerceSettings({ size: 600 }).size, 600);
+assert.equal(coerceSettings({ size: 650 }).size, 600);
 
 // Marquee positions are true evenly spaced, separate front-cover through-holes.
 const guideSquare: [number, number][] = [[-20,-20],[20,-20],[20,20],[-20,20]];
@@ -218,6 +244,30 @@ const boundMarquee = coerceSettings({
 assert.deepEqual([boundMarquee.marqueeCount, boundMarquee.marqueeDiameter,
   boundMarquee.marqueeInset], [240, 1.5, 20]);
 
+// Positive and negative arc-length phases move every hole in 0.1 mm steps
+// and correctly wrap when a full perimeter has been traversed.
+const shifted = sampleMarqueeHoles([guideSquare], 16, 2,
+  [[-30,-30],[30,-30],[30,30],[-30,30]], 3, 0.1);
+assert.equal(shifted.length, locations.length);
+assert.ok(Math.abs(shifted[0]![0] - locations[0]![0] - 0.1) < 1e-8);
+assert.ok(Math.abs(shifted[0]![1] - locations[0]![1]) < 1e-8);
+const negativeShift = sampleMarqueeHoles([guideSquare], 16, 2,
+  [[-30,-30],[30,-30],[30,30],[-30,30]], 3, -0.1);
+assert.ok(Math.abs(negativeShift[0]![0] - locations[0]![0] + 0.1) < 1e-8);
+const wrappedShift = sampleMarqueeHoles([guideSquare], 16, 2,
+  [[-30,-30],[30,-30],[30,30],[-30,30]], 3, 160.1);
+for (let i = 0; i < shifted.length; i++) {
+  assert.ok(Math.hypot(shifted[i]![0] - wrappedShift[i]![0],
+    shifted[i]![1] - wrappedShift[i]![1]) < 1e-7, 'a full loop wraps the pattern');
+}
+const shiftSettings = coerceSettings({ ...DEFAULT_SETTINGS,
+  marqueeLayout: 'outer', marqueeDiameter: 3.16, marqueeInset: 6.24, marqueeShift: -12.36 });
+assert.deepEqual([shiftSettings.marqueeDiameter, shiftSettings.marqueeInset, shiftSettings.marqueeShift],
+  [3.2, 6.2, -12.4], 'marquee controls save at 0.1 mm precision');
+assert.equal(coerceSettings({ marqueeShift: 999 }).marqueeShift, 100);
+assert.equal(coerceSettings({ marqueeShift: -999 }).marqueeShift, -100);
+assert.equal(coerceSettings({ marqueeShift: 'invalid' }).marqueeShift, 0);
+
 const marqueeOuter = buildLightbox(wasm, {
   ...coerceSettings(DEFAULT_SETTINGS), marqueeLayout: 'outer',
   marqueeCount: 32, marqueeDiameter: 2.5, marqueeInset: 5,
@@ -227,6 +277,24 @@ assert.ok(meshVolume(marqueeOuter.parts[1]!) < meshVolume(flatCover.parts[1]!) -
   'outer marquee bores physically remove material from the diffuser');
 assert.ok(marqueeOuter.warnings.some(w => w.includes('32 marquee holes')));
 verifyMeshes(marqueeOuter);
+const shiftedMarquee = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
+  marqueeLayout: 'outer', marqueeCount: 24, marqueeDiameter: 3.1,
+  marqueeInset: 6.2, marqueeShift: 0.1 });
+const unshiftedMarquee = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
+  marqueeLayout: 'outer', marqueeCount: 24, marqueeDiameter: 3.1,
+  marqueeInset: 6.2, marqueeShift: 0 });
+assert.notDeepEqual(Array.from(shiftedMarquee.parts[1]!.positions),
+  Array.from(unshiftedMarquee.parts[1]!.positions),
+  '0.1 mm pattern shift changes the printable diffuser');
+verifyMeshes(shiftedMarquee);
+const bigBox = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
+  size: 600, wireExit: 'single', hole1Angle: 45, hole1Depth: 45,
+  marqueeLayout: 'outer', marqueeCount: 24, marqueeDiameter: 3.1,
+  marqueeInset: 6.2, marqueeShift: 0.1 });
+assert.ok(Math.abs(bigBox.width - 600) < 0.001, '600 mm output preserves its true size');
+assert.ok(bigBox.warnings.some(w => /print bed/i.test(w)),
+  'oversized printed parts warn of bed requirements');
+verifyMeshes(bigBox);
 for (const lipPlacement of ['cover', 'box'] as const) {
   const marqueeLip = buildLightbox(wasm, { ...coerceSettings(DEFAULT_SETTINGS),
     marqueeLayout: 'outer', marqueeCount: 12, marqueeDiameter: 2.5,
@@ -280,4 +348,4 @@ const traced = processImage({data: pixels, width:W, height:H}, 2,
   {removeBg:true, smoothing:0.4, preserveDetail:true, designMm:120});
 assert.ok(traced.outline.length > 0, 'tracer returns shell silhouette');
 assert.ok(traced.regions.length >= 2, 'tracer retains both image colors');
-console.log('LED lightbox: image tracing, colour diffuser, both registration-lip placements, groove clearance, thickness, printable orientation, dual-positioned wire exits, black/white artwork borders, marquee perforations and project settings passed.');
+console.log('LED lightbox: image tracing, colour diffuser, both registration-lip placements, groove clearance, thickness, printable orientation, dual-positioned wire exits, black/white artwork borders, 600 mm parts, single/dual wiring, 0.1 mm marquee positioning and project settings passed.');
