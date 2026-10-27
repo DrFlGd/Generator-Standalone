@@ -10,11 +10,6 @@
   "icon": "apps/hub/public/thumbs/keychain-carabiner.png",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/keychain-carabiner/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {

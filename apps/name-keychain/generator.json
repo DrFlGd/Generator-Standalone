@@ -10,11 +10,6 @@
   "icon": "apps/hub/public/thumbs/name-keychain.jpg",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/name-keychain/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {

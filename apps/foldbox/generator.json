@@ -10,11 +10,6 @@
   "icon": "apps/hub/public/thumbs/foldbox.png",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/foldbox/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {
