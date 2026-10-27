@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "foldbox",
+  "name": "Fold-Up Box Generator",
+  "summary": "Set the size, pick a structure, print it flat as one thin grooved sheet, then fold it into a box. Twelve structures, from mailers and trays to a cake box and tuck cartons, with a live fold animation before you commit.",
+  "tags": [
+    "boxes"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/foldbox.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/foldbox/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "foldbox-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}

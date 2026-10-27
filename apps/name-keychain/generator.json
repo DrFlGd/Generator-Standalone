@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "name-keychain",
+  "name": "Name Keychain Generator",
+  "summary": "Personalized plate-style name keychains with live font preview, pixel & script styles, multi-language, 1 to 3 colour layers, and AMS & no-AMS printing.",
+  "tags": [
+    "keychains"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/name-keychain.jpg",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/name-keychain/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "name-keychain-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}

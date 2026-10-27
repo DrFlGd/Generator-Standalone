@@ -1,0 +1,176 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/collection.schema.json",
+  "id": "vostok-labs",
+  "name": "Vostok Labs",
+  "defaults": {
+    "license": "CC-BY-NC-ND-4.0",
+    "tags": [
+      "vostok-labs"
+    ],
+    "homepage": "https://vostoklabs.github.io"
+  },
+  "generators": [
+    {
+      "path": "apps/clicker-generator/generator.json"
+    },
+    {
+      "path": "apps/magnet-generator/generator.json"
+    },
+    {
+      "path": "apps/keycap-generator/generator.json"
+    },
+    {
+      "path": "apps/name-keychain/generator.json"
+    },
+    {
+      "path": "apps/house-number/generator.json"
+    },
+    {
+      "path": "apps/pen-topper/generator.json"
+    },
+    {
+      "path": "apps/foldbox/generator.json"
+    },
+    {
+      "path": "apps/keychain-carabiner/generator.json"
+    },
+    {
+      "path": "apps/laser-studio/generator.json"
+    },
+    {
+      "path": "apps/laser-box/generator.json"
+    },
+    {
+      "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+      "id": "large-box",
+      "name": "Large Customizable Box",
+      "summary": "Large customizable print-in-place box. No hardware/screws required.",
+      "tags": [
+        "boxes"
+      ],
+      "process": "3d-print",
+      "icon": "apps/hub/public/thumbs/large-box.png",
+      "distributions": [
+        {
+          "kind": "web",
+          "url": "https://makerworld.com/en/models/2300059",
+          "label": "Open on MakerWorld"
+        }
+      ]
+    },
+    {
+      "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+      "id": "rugged-box",
+      "name": "Customizable Rugged Box",
+      "summary": "Super customizable rugged box. Print in place, no extra hardware.",
+      "tags": [
+        "boxes"
+      ],
+      "process": "3d-print",
+      "icon": "apps/hub/public/thumbs/rugged-box.png",
+      "distributions": [
+        {
+          "kind": "web",
+          "url": "https://makerworld.com/en/models/1642041",
+          "label": "Open on MakerWorld"
+        }
+      ]
+    },
+    {
+      "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+      "id": "washer-spacer",
+      "name": "Washer & Spacer Generator",
+      "summary": "Customizable washer and spacer generator. Set ID, OD, and thickness.",
+      "tags": [
+        "desk-home"
+      ],
+      "process": "3d-print",
+      "icon": "apps/hub/public/thumbs/washer-spacer.png",
+      "distributions": [
+        {
+          "kind": "web",
+          "url": "https://makerworld.com/en/models/1669724",
+          "label": "Open on MakerWorld"
+        }
+      ]
+    },
+    {
+      "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+      "id": "headphone-hook",
+      "name": "Desk Headphone Hook",
+      "summary": "Adjustable desk headphone hook. Parametric to fit any desk thickness.",
+      "tags": [
+        "desk-home"
+      ],
+      "process": "3d-print",
+      "icon": "apps/hub/public/thumbs/headphone-hook.png",
+      "distributions": [
+        {
+          "kind": "web",
+          "url": "https://makerworld.com/en/models/2483947",
+          "label": "Open on MakerWorld"
+        }
+      ]
+    },
+    {
+      "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+      "id": "edge-mount-dock",
+      "name": "Edge Mount Device Dock",
+      "summary": "Customizable edge mount dock for devices. Customize to fit your phone, Kindle, or tablet.",
+      "tags": [
+        "desk-home"
+      ],
+      "process": "3d-print",
+      "icon": "apps/hub/public/thumbs/edge-mount-dock.png",
+      "distributions": [
+        {
+          "kind": "web",
+          "url": "https://makerworld.com/en/models/1684531",
+          "label": "Open on MakerWorld"
+        }
+      ]
+    },
+    {
+      "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+      "id": "powerstrip-holder",
+      "name": "Screw-On Power Strip Holder",
+      "summary": "Customizable screw-on power strip holder. Mount strip securely under desks.",
+      "tags": [
+        "desk-home"
+      ],
+      "process": "3d-print",
+      "icon": "apps/hub/public/thumbs/powerstrip-holder.png",
+      "distributions": [
+        {
+          "kind": "web",
+          "url": "https://makerworld.com/en/models/1732918",
+          "label": "Open on MakerWorld"
+        }
+      ]
+    },
+    {
+      "id": "vostok-labs-standalone",
+      "name": "Vostok Labs Standalone (Windows)",
+      "summary": "Every live generator bundled as one offline Windows desktop app.",
+      "tags": [
+        "desktop",
+        "offline"
+      ],
+      "process": "3d-print",
+      "icon": "apps/hub/public/favicon.png",
+      "distributions": [
+        {
+          "kind": "exe",
+          "platform": "windows",
+          "install": "installer",
+          "label": "Install Windows app",
+          "from": {
+            "type": "release",
+            "tag": "v*",
+            "asset": "*-setup.exe"
+          }
+        }
+      ]
+    }
+  ]
+}

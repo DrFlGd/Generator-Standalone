@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "laser-studio",
+  "name": "Laser Studio",
+  "summary": "Pick a design, type your name, download the cut file. 58 laser templates (keychains, pet tags, ornaments, QR stands, coasters and signs) with 257 fonts, a symbol library and pattern fills, in millimetres for Bambu Suite or any laser software that reads SVG.",
+  "tags": [
+    "keychains",
+    "signs"
+  ],
+  "process": "laser",
+  "icon": "apps/hub/public/thumbs/laser-studio.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/laser-studio/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "laser-studio-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}
