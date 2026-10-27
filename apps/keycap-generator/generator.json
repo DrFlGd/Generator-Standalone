@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "keycap-generator",
+  "name": "Custom Keycap Generator",
+  "summary": "Custom keycaps with icons, logos, or letters.",
+  "tags": [
+    "desk-home"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/keycap.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/SVG-keycap-generator/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "keycap-generator-web-*.zip"
+      },
+      "entry": "index.html"
+    },
+    {
+      "kind": "web",
+      "url": "https://makerworld.com/en/models/2959969",
+      "label": "Open on MakerWorld"
+    }
+  ]
+}

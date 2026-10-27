@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "pen-topper",
+  "name": "Pen Topper Generator",
+  "summary": "Personalised pen and pencil toppers: any name, 257 fonts, 1,487 symbols, and a socket sized to the pen you actually own.",
+  "tags": [
+    "desk-home"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/pen-topper.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/pen-topper/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "pen-topper-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}

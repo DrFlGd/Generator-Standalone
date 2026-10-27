@@ -1,0 +1,64 @@
+name: Web bundles release
+
+# Publishes an offline copy of every live own-site generator as a release asset, so
+# Generator Library (and anyone else) can download a build instead of mirroring the site.
+# One release per run, tagged web-<run number>; the newest is what a library install
+# resolves to, and a later one is what it reports as an update.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'config/**'
+      - 'generators.json'
+      - 'scripts/web-bundles.mjs'
+      - '.github/workflows/web-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: web-release
+  cancel-in-progress: false
+
+jobs:
+  bundles:
+    runs-on: ubuntu-latest
+    env:
+      VITE_BUILD_ID: ${{ github.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 10.8.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and zip every live generator
+        run: node scripts/web-bundles.mjs ${{ github.run_number }}
+
+      - name: Publish release
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        with:
+          tag_name: web-${{ github.run_number }}
+          name: Web bundles ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          files: web-bundles/*.zip
+          fail_on_unmatched_files: true
+          body: |
+            Offline copies of every live generator, built from ${{ github.sha }}.
+            Unzip one and open index.html from a local web server, or install it with Generator Library.

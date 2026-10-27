@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "keychain-carabiner",
+  "name": "Keychain Carabiner Set",
+  "summary": "A snap-hook clip and a chain to hang your keys or a fidget on. Every part in any shape, a symbol you drag onto the clip and an optional charm, printed flat in one job, or a chain that prints already linked.",
+  "tags": [
+    "keychains"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/keychain-carabiner.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/keychain-carabiner/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "keychain-carabiner-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}

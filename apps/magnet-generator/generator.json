@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "magnet-generator",
+  "name": "Fridge Magnet & Fidget Slider",
+  "summary": "Turn any image into a printable fridge magnet, or a two-piece magnetic fidget slider that clicks as it slides.",
+  "tags": [
+    "fidgets",
+    "desk-home"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/magnet.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/magnet/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "magnet-generator-web-*.zip"
+      },
+      "entry": "index.html"
+    },
+    {
+      "kind": "web",
+      "url": "https://makerworld.com/en/models/3137555",
+      "label": "Open on MakerWorld"
+    }
+  ]
+}

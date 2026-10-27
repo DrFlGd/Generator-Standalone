@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "clicker-generator",
+  "name": "Image to Clicker",
+  "summary": "Turn any image, logo, or custom text into a clicker fidget.",
+  "tags": [
+    "fidgets",
+    "keychains"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/clicker.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/Clicker-Generator/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "clicker-generator-web-*.zip"
+      },
+      "entry": "index.html"
+    },
+    {
+      "kind": "web",
+      "url": "https://makerworld.com/en/models/2980346",
+      "label": "Open on MakerWorld"
+    }
+  ]
+}

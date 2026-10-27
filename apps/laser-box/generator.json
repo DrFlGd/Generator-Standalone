@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "laser-box",
+  "name": "Laser Box",
+  "summary": "Pick a box, set its size and material, add a pattern, download a cut file that fits together. Lift-off lids, hinged lids with a latch, open trays and chests of drawers, with finger or flex joints.",
+  "tags": [
+    "boxes"
+  ],
+  "process": "laser",
+  "icon": "apps/hub/public/thumbs/laser-box.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/laser-box/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "laser-box-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}

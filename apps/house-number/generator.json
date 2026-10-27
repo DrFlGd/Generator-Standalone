@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "house-number",
+  "name": "House & Office Number Generator",
+  "summary": "Type a number, pick a plate, print a house or office sign that fits your door. Custom fonts, independent line sizes, and keyhole slots so no fixings show.",
+  "tags": [
+    "signs"
+  ],
+  "process": "3d-print",
+  "icon": "apps/hub/public/thumbs/house-number.png",
+  "distributions": [
+    {
+      "kind": "web",
+      "url": "https://vostoklabs.github.io/house-number/",
+      "label": "Open online"
+    },
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "house-number-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}
