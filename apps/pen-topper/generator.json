@@ -10,11 +10,6 @@
   "icon": "apps/hub/public/thumbs/pen-topper.png",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/pen-topper/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {

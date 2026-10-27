@@ -10,12 +10,20 @@ const fmt = (n: number) => `${n.toLocaleString('en-US')}`;
 // alone misidentifies it as a browser and displays both post-export prompts.
 // Detect Tauri locally to this licence UI; do not change export behavior,
 // notifications for actual errors, or the real web app.
+// The offline web bundles (scripts/web-bundles.mjs) are the same standalone
+// build run from a local server instead of Tauri; they set
+// __VOSTOK_OFFLINE_BUNDLE__ so they get the same quiet exports. Setting the
+// full desktop host flag there would also hand Load to a native picker that
+// a plain browser window does not have.
 function suppressPostExportLicenceUI(): boolean {
   const host = globalThis as typeof globalThis & {
     __TAURI__?: unknown;
     __TAURI_INTERNALS__?: unknown;
+    __VOSTOK_OFFLINE_BUNDLE__?: unknown;
   };
-  return isDesktop() || Boolean(host.__TAURI__ || host.__TAURI_INTERNALS__);
+  return isDesktop()
+    || Boolean(host.__TAURI__ || host.__TAURI_INTERNALS__)
+    || host.__VOSTOK_OFFLINE_BUNDLE__ === true;
 }
 
 export interface LicenseModalOptions {

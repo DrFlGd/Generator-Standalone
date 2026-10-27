@@ -11,11 +11,6 @@
   "icon": "apps/hub/public/thumbs/magnet.png",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/magnet/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {

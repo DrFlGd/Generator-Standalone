@@ -41,6 +41,9 @@
       "path": "apps/laser-box/generator.json"
     },
     {
+      "path": "apps/led-lightbox/generator.json"
+    },
+    {
       "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
       "id": "large-box",
       "name": "Large Customizable Box",

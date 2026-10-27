@@ -10,11 +10,6 @@
   "icon": "apps/hub/public/thumbs/house-number.png",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/house-number/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {

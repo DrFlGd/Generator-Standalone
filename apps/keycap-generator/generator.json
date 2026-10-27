@@ -10,11 +10,6 @@
   "icon": "apps/hub/public/thumbs/keycap.png",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/SVG-keycap-generator/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {

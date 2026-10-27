@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DrFlGd/Generator-Library/main/schema/generator.schema.json",
+  "id": "led-lightbox",
+  "name": "Image LED Lightbox",
+  "summary": "Custom hollow LED boxes from a logo or silhouette image.",
+  "tags": [
+    "boxes",
+    "desk-home",
+    "signs"
+  ],
+  "process": "3d-print",
+  "icon": "apps/led-lightbox/public/preview.svg",
+  "distributions": [
+    {
+      "kind": "bundle",
+      "label": "Install offline copy",
+      "from": {
+        "type": "release",
+        "tag": "web-*",
+        "asset": "led-lightbox-web-*.zip"
+      },
+      "entry": "index.html"
+    }
+  ]
+}

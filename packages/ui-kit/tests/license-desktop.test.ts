@@ -5,7 +5,11 @@ import './support/install-mini-dom';
 import { setHostEnv } from '../src/host-env';
 import { licenseAfterExport, openLicenseModal, licenseReminderToast } from '../src/components/license';
 
-type HostGlobals = typeof globalThis & { __TAURI__?: unknown; __TAURI_INTERNALS__?: unknown };
+type HostGlobals = typeof globalThis & {
+  __TAURI__?: unknown;
+  __TAURI_INTERNALS__?: unknown;
+  __VOSTOK_OFFLINE_BUNDLE__?: unknown;
+};
 const host = globalThis as HostGlobals;
 const initial = document.body.children.length;
 const check = (name: string, ok: boolean) => {
@@ -27,6 +31,13 @@ openLicenseModal();
 licenseReminderToast();
 check('Tauri internals also suppress both popups', document.body.children.length === initial);
 delete host.__TAURI_INTERNALS__;
+
+host.__VOSTOK_OFFLINE_BUNDLE__ = true;
+licenseAfterExport();
+openLicenseModal();
+licenseReminderToast();
+check('Offline web bundle flag suppresses both popups', document.body.children.length === initial);
+delete host.__VOSTOK_OFFLINE_BUNDLE__;
 
 setHostEnv('desktop');
 licenseAfterExport();

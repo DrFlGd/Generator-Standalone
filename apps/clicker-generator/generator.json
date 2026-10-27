@@ -11,11 +11,6 @@
   "icon": "apps/hub/public/thumbs/clicker.png",
   "distributions": [
     {
-      "kind": "web",
-      "url": "https://vostoklabs.github.io/Clicker-Generator/",
-      "label": "Open online"
-    },
-    {
       "kind": "bundle",
       "label": "Install offline copy",
       "from": {
